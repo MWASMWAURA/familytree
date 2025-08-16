@@ -1,0 +1,674 @@
+@import url('./xy-theme.css');
+
+html,
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-sizing: border-box;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+}
+
+.flow-container {
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.flow-container.dark {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+.flow-container.dark .react-flow {
+  background: #1a1a1a;
+}
+
+/* Compact Family Node Styles */
+.family-node {
+  position: relative;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 120px;
+  min-height: 60px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.dark .family-node {
+  background: #2d3748;
+  border-color: #4a5568;
+  color: #ffffff;
+}
+
+.family-node:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.dark .family-node:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
+}
+
+.node-content {
+  text-align: center;
+  z-index: 10;
+  position: relative;
+}
+
+.node-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a202c;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.dark .node-name {
+  color: #f7fafc;
+}
+
+.node-details {
+  font-size: 11px;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 2px;
+}
+
+.dark .node-details {
+  color: #a0aec0;
+}
+
+.edit-hint {
+  font-size: 9px;
+  color: #94a3b8;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.family-node:hover .edit-hint {
+  opacity: 1;
+}
+
+.dark .edit-hint {
+  color: #718096;
+}
+
+/* Edit Form Styles */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-input {
+  padding: 4px 6px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  color: #1a202c;
+}
+
+.dark .edit-input {
+  background: #4a5568;
+  border-color: #718096;
+  color: #f7fafc;
+}
+
+.name-input {
+  font-weight: 600;
+}
+
+.edit-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.save-btn, .cancel-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.save-btn {
+  background: #10b981;
+  color: white;
+}
+
+.cancel-btn {
+  background: #ef4444;
+  color: white;
+}
+
+/* Add Button Styles */
+.add-button {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.family-node:hover .add-button {
+  opacity: 1;
+}
+
+.add-button:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+}
+
+.add-parent {
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.add-child {
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.add-spouse {
+  right: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #e91e63;
+  font-size: 10px;
+}
+
+.add-spouse:hover {
+  background: #c2185b;
+}
+
+.spouse-link {
+  font-size: 10px;
+  color: #e91e63;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 2px;
+}
+
+.dark .spouse-link {
+  color: #f48fb1;
+}
+
+.spouse-link:hover {
+  color: #c2185b;
+}
+
+.dark .spouse-link:hover {
+  color: #f8bbd9;
+}
+
+.spouse-input {
+  font-size: 10px;
+}
+
+/* Family Selector Styles */
+.family-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.family-selector {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .family-selector {
+    padding: 16px;
+    border-radius: 12px;
+    max-height: 90vh;
+  }
+}
+
+.family-selector h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+@media (max-width: 768px) {
+  .family-selector h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+}
+
+.family-selector h3 {
+  color: #555;
+  margin-bottom: 12px;
+  font-size: 16px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .family-selector h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+}
+
+.existing-families {
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .existing-families {
+    margin-bottom: 20px;
+  }
+}
+
+.family-option {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .family-option {
+    padding: 8px 10px;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+}
+
+.family-option:hover {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  transform: translateY(-1px);
+}
+
+.create-new-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .create-new-btn {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+.create-new-btn:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .create-form {
+    gap: 8px;
+  }
+}
+
+.family-name-input {
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .family-name-input {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+.family-name-input:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+.create-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .create-buttons {
+    gap: 6px;
+  }
+}
+
+.create-btn, .cancel-btn {
+  flex: 1;
+  padding: 8px 12px;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 13px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .create-btn, .cancel-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 32px;
+  }
+}
+
+.create-btn {
+  background: #4caf50;
+}
+
+.create-btn:hover {
+  background: #45a049;
+}
+
+.cancel-btn {
+  background: #f44336;
+}
+
+.cancel-btn:hover {
+  background: #da190b;
+}
+
+/* Control Panel Styles */
+.control-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .control-panel {
+    padding: 6px;
+    min-width: 100px;
+    border-radius: 6px;
+  }
+}
+
+.dark .control-panel {
+  background: rgba(45, 55, 72, 0.95);
+  border-color: #4a5568;
+  color: #f7fafc;
+}
+
+.panel-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+  .panel-section h4 {
+    font-size: 9px;
+    margin: 0 0 4px 0;
+  }
+}
+
+.dark .panel-section h4 {
+  color: #d1d5db;
+}
+
+.control-btn {
+  display: block;
+  width: 100%;
+  padding: 4px 6px;
+  margin-bottom: 3px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .control-btn {
+    padding: 3px 5px;
+    font-size: 9px;
+    margin-bottom: 2px;
+  }
+}
+
+.control-btn:hover {
+  background: #f3f4f6;
+  border-color: #3b82f6;
+}
+
+.dark .control-btn {
+  background: #4a5568;
+  border-color: #718096;
+  color: #f7fafc;
+}
+
+.dark .control-btn:hover {
+  background: #5a6578;
+  border-color: #60a5fa;
+}
+
+.control-btn:last-child {
+  margin-bottom: 0;
+}
+
+/* Mobile-specific adjustments for family nodes */
+@media (max-width: 768px) {
+  .family-node {
+    min-width: 100px;
+    min-height: 50px;
+    padding: 8px;
+  }
+  
+  .node-name {
+    font-size: 12px;
+  }
+  
+  .node-details {
+    font-size: 10px;
+  }
+  
+  .edit-hint {
+    font-size: 8px;
+  }
+  
+  .add-button {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+  
+  .edit-input {
+    font-size: 11px;
+    padding: 3px 5px;
+  }
+}
+
+/* Touch-friendly controls for mobile */
+@media (max-width: 768px) {
+  .control-panel {
+    touch-action: manipulation;
+  }
+  
+  .control-btn {
+    min-height: 32px;
+    touch-action: manipulation;
+  }
+  
+  .family-option {
+    min-height: 40px;
+    touch-action: manipulation;
+  }
+  
+  .create-new-btn {
+    min-height: 40px;
+    touch-action: manipulation;
+  }
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+  .react-flow {
+    touch-action: none;
+  }
+  
+  /* Stack control panels vertically on mobile */
+  .react-flow__panel-top-left,
+  .react-flow__panel-top-right {
+    position: fixed;
+    top: 10px;
+  }
+  
+  .react-flow__panel-top-left {
+    left: 10px;
+    right: auto;
+  }
+  
+  .react-flow__panel-top-right {
+    right: 10px;
+    left: auto;
+  }
+  
+  .react-flow__panel-bottom-left,
+  .react-flow__panel-bottom-right {
+    position: fixed;
+    bottom: 10px;
+  }
+  
+  .react-flow__panel-bottom-left {
+    left: 10px;
+    right: auto;
+  }
+  
+  .react-flow__panel-bottom-right {
+    right: 10px;
+    left: auto;
+  }
+}
+/* Enhanced Edge Styles */
+.react-flow__edge-path {
+  stroke: #64748b;
+  stroke-width: 2;
+  transition: all 0.2s ease;
+}
+
+.dark .react-flow__edge-path {
+  stroke: #94a3b8;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #3b82f6;
+  stroke-width: 3;
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke-dasharray: 8 4;
+  animation: dashdraw 1s linear infinite;
+}
+
+@keyframes dashdraw {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+/* Handle Styles */
+.react-flow__handle {
+  background: #64748b;
+  border: 2px solid white;
+  width: 6px;
+  height: 6px;
+}
+
+.dark .react-flow__handle {
+  background: #94a3b8;
+  border-color: #2d3748;
+}
+
+/* Background Styles */
+.react-flow__background {
+  background-color: #f8fafc;
+}
+
+.dark .react-flow__background {
+  background-color: #1a1a1a;
+}
