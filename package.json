@@ -10,10 +10,15 @@
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",
     "@xyflow/react": "^12.8.3",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
+    "pg": "^8.16.3",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-draggable": "^4.5.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",
@@ -21,5 +26,18 @@
     "@vitejs/plugin-react": "^3.1.0",
     "typescript": "^4.9.0",
     "vite": "4.1.4"
-  }
+  },
+  "main": "vite.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MWASMWAURA/familytree.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MWASMWAURA/familytree/issues"
+  },
+  "homepage": "https://github.com/MWASMWAURA/familytree#readme",
+  "description": ""
 }

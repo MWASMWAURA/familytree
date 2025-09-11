@@ -1,0 +1,299 @@
+.admin-dashboard-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 600px;
+  min-width: 500px;
+}
+
+.admin-dashboard h3 {
+  margin: 0 0 20px 0;
+  color: #2c3e50;
+  font-size: 1.4em;
+  text-align: center;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+}
+
+.admin-section {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.admin-section h4 {
+  margin: 0 0 15px 0;
+  color: #34495e;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-section h4::before {
+  content: "⚙️";
+  font-size: 1em;
+}
+
+/* Access Code Section */
+.code-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.access-code {
+  font-family: 'Courier New', monospace;
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #e74c3c;
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 2px solid #e74c3c;
+  flex: 1;
+  text-align: center;
+}
+
+.copy-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+  background: #2980b9;
+  transform: scale(1.05);
+}
+
+.regenerate-btn {
+  background: #e67e22;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.regenerate-btn:hover {
+  background: #d35400;
+  transform: translateY(-1px);
+}
+
+/* Shareable Links Section */
+.link-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.link-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link-item label {
+  font-weight: bold;
+  color: #2c3e50;
+  font-size: 0.9em;
+}
+
+.link-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.link-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #bdc3c7;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85em;
+  background: #f8f9fa;
+  color: #2c3e50;
+}
+
+.link-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Admin Management Section */
+.add-admin-btn {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.add-admin-btn:hover {
+  background: #229954;
+  transform: translateY(-1px);
+}
+
+.add-admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-id-input {
+  padding: 10px 12px;
+  border: 2px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 0.9em;
+  transition: border-color 0.2s ease;
+}
+
+.admin-id-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.admin-form-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-btn {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.confirm-btn:hover {
+  background: #229954;
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #7f8c8d;
+  transform: translateY(-1px);
+}
+
+/* Quick Actions Section */
+.quick-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  background: #9b59b6;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.action-btn:hover {
+  background: #8e44ad;
+  transform: translateY(-1px);
+}
+
+/* Dark theme support */
+[data-theme="dark"] .admin-dashboard-panel {
+  background: rgba(44, 62, 80, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .admin-dashboard h3 {
+  color: #ecf0f1;
+  border-bottom-color: #3498db;
+}
+
+[data-theme="dark"] .admin-section {
+  background: rgba(52, 73, 94, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .admin-section h4 {
+  color: #ecf0f1;
+}
+
+[data-theme="dark"] .access-code {
+  background: #34495e;
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+[data-theme="dark"] .link-input {
+  background: #34495e;
+  border-color: #7f8c8d;
+  color: #ecf0f1;
+}
+
+[data-theme="dark"] .admin-id-input {
+  background: #34495e;
+  border-color: #7f8c8d;
+  color: #ecf0f1;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .admin-dashboard-panel {
+    min-width: 300px;
+    max-width: 90vw;
+    padding: 15px;
+  }
+
+  .admin-dashboard h3 {
+    font-size: 1.2em;
+  }
+
+  .quick-actions {
+    flex-direction: column;
+  }
+
+  .admin-form-buttons {
+    flex-direction: column;
+  }
+}

@@ -1,5 +1,6 @@
 import FamilyTreeNode from "./FamilyTreeNode";
-import React, { useState, useCallback, useRef } from "react";
+import AdminDashboard from "./src/components/AdminDashboard";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   Background,
   ReactFlow,
@@ -10,11 +11,17 @@ import {
   useEdgesState,
   useReactFlow,
   ReactFlowProvider,
+  Node,
+  Edge,
 } from "@xyflow/react";
 import dagre from "@dagrejs/dagre";
 import html2canvas from "html2canvas";
 import "@xyflow/react/dist/style.css";
 import { initialNodes, initialEdges } from "./initialElements";
+import Draggable from "react-draggable";
+
+// API base URL - adjust if server is running on different port
+const API_BASE_URL = "http://localhost:3001/api";
 
 const nodeTypes = { familyNode: FamilyTreeNode };
 
@@ -33,10 +40,10 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
   // Configure Dagre for better family tree layout
   layoutGraph.setGraph({
     rankdir: direction,
-    nodesep: isHorizontal ? 150 : 100, // More space between nodes at same level
-    ranksep: isHorizontal ? 180 : 150, // More space between generations
-    marginx: 50,
-    marginy: 50,
+    nodesep: isHorizontal ? 180 : 180, // Increased space between nodes at same level
+    ranksep: isHorizontal ? 210 : 210, // Increased space between generations
+    marginx: 150, // Increased margin to avoid overlap
+    marginy: 150, // Increased margin to avoid overlap
     align: "UL",
     acyclicer: "greedy",
   });
@@ -101,10 +108,10 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
         if (isHorizontal) {
           // Horizontal layout: place spouse below partner
           adjustedX = partnerPosition.x - nodeWidth / 2;
-          adjustedY = partnerPosition.y + nodeHeight + 20; // Place below partner
+          adjustedY = partnerPosition.y + nodeHeight + 50; // More space below partner
         } else {
           // Vertical layout: place spouse to the right of partner
-          adjustedX = partnerPosition.x + nodeWidth + 30; // Place to the right of partner
+          adjustedX = partnerPosition.x + nodeWidth + 60; // More space to the right of partner
           adjustedY = partnerPosition.y - nodeHeight / 2;
         }
       } else {
@@ -239,9 +246,17 @@ const familyTemplates = {
   },
 };
 
-const FamilySelector = ({ onSelectFamily, onCreateNew }) => {
+const FamilySelector = ({
+  onSelectFamily,
+  onCreateNew,
+  savedFamilies,
+  onAccessWithCode,
+}) => {
   const [newFamilyName, setNewFamilyName] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showAccessForm, setShowAccessForm] = useState(false);
+  const [accessFamilyName, setAccessFamilyName] = useState("");
+  const [accessCode, setAccessCode] = useState("");
 
   const handleCreateNew = () => {
     if (newFamilyName.trim()) {
@@ -251,22 +266,98 @@ const FamilySelector = ({ onSelectFamily, onCreateNew }) => {
     }
   };
 
+  const handleAccessWithCode = () => {
+    if (accessFamilyName.trim() && accessCode.trim()) {
+      onAccessWithCode(accessFamilyName.trim(), accessCode.trim());
+      setAccessFamilyName("");
+      setAccessCode("");
+      setShowAccessForm(false);
+    }
+  };
+
   return (
     <div className="family-selector-overlay">
       <div className="family-selector">
         <h2>Family Tree Manager</h2>
         <div className="existing-families">
-          <h3>Existing Families</h3>
-          {Object.keys(familyTemplates).map((familyName) => (
-            <button
-              key={familyName}
-              className="family-option"
-              onClick={() => onSelectFamily(familyName)}
-            >
-              {familyName}
-            </button>
-          ))}
+          {/* <h3>Your Families</h3>
+          <div style={{ fontSize: "0.95em", color: "#888", marginBottom: 8 }}>
+            Only families where you are an admin are shown below. If a family
+            exists but you are not an admin, it will not appear here.
+          </div> */}
+          {savedFamilies && savedFamilies.length > 0 ? (
+            <div className="saved-families">
+              <h4>Families You Admin</h4>
+              {savedFamilies.map((family) => (
+                <button
+                  key={family.id}
+                  className="family-option saved"
+                  onClick={() => onSelectFamily(family.name, family.data)}
+                >
+                  {family.name} (Admin)
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div>No saved families found.</div>
+          )}
+          {/* <div className="template-families">
+            <h4>Family Templates</h4>
+            {Object.keys(familyTemplates).map((familyName) => (
+              <button
+                key={familyName}
+                className="family-option template"
+                onClick={() => onSelectFamily(familyName)}
+              >
+                {familyName}
+              </button>
+            ))}
+          </div> */}
         </div>
+
+        <div className="access-family">
+          <h3>Access Family Tree</h3>
+          {!showAccessForm ? (
+            <button
+              className="access-btn"
+              onClick={() => setShowAccessForm(true)}
+            >
+              🔓 Access with Code
+            </button>
+          ) : (
+            <div className="access-form">
+              <input
+                type="text"
+                value={accessFamilyName}
+                onChange={(e) => setAccessFamilyName(e.target.value)}
+                placeholder="Family name"
+                className="family-name-input"
+              />
+              <input
+                type="text"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                placeholder="Access code"
+                className="access-code-input"
+              />
+              <div className="access-buttons">
+                <button
+                  onClick={handleAccessWithCode}
+                  className="access-submit-btn"
+                >
+                  Access
+                </button>
+                <button
+                  onClick={() => setShowAccessForm(false)}
+                  className="cancel-btn"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="create-new-family">
           <h3>Create New Family</h3>
           {!showCreateForm ? (
@@ -308,13 +399,198 @@ const FamilySelector = ({ onSelectFamily, onCreateNew }) => {
 const Flow = () => {
   const reactFlowWrapper = useRef(null);
   const { zoomIn, zoomOut, fitView } = useReactFlow();
-  const [theme, setTheme] = useState("light");
-  const [nextNodeId, setNextNodeId] = useState(10);
-  const [currentFamily, setCurrentFamily] = useState(null);
-  const [shareableLink, setShareableLink] = useState("");
+  const [theme, setTheme] = useState<string>("light");
+  const [nextNodeId, setNextNodeId] = useState<number>(10);
+  const [currentFamily, setCurrentFamily] = useState<string | null>(null);
+  const [shareableLink, setShareableLink] = useState<string>("");
+  const [savedFamilies, setSavedFamilies] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [currentFamilyId, setCurrentFamilyId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [accessCode, setAccessCode] = useState<string>("");
+  const [showAccessCodeDialog, setShowAccessCodeDialog] =
+    useState<boolean>(false);
+  const [accessCodeInput, setAccessCodeInput] = useState<string>("");
+  const [showAdminDashboard, setShowAdminDashboard] = useState(true);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Initialize user ID and load data on component mount
+  useEffect(() => {
+    const initializeUserId = () => {
+      const isValidUuid = (v: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          v
+        );
+
+      let storedUserId = localStorage.getItem("userId");
+
+      if (!storedUserId || !isValidUuid(storedUserId)) {
+        // Generate a proper UUID so it matches the server's UUID schema
+        storedUserId = (crypto as any).randomUUID
+          ? (crypto as any).randomUUID()
+          : `${Date.now()}-0000-4000-8000-000000000000`; // fallback simple pattern
+        localStorage.setItem("userId", storedUserId);
+      }
+      setUserId(storedUserId);
+    };
+
+    initializeUserId();
+    loadPersistedFamily();
+  }, []);
+
+  // Load saved families when userId is available
+  useEffect(() => {
+    if (userId) {
+      loadSavedFamilies();
+    }
+  }, [userId]);
+
+  // After saved families are loaded, check if persisted family exists in backend
+  useEffect(() => {
+    if (savedFamilies && savedFamilies.length > 0) {
+      const persistedData = localStorage.getItem("currentFamilyTree");
+      if (persistedData) {
+        const familyData = JSON.parse(persistedData);
+        const exists = savedFamilies.some((f) => f.name === familyData.name);
+        if (!exists) {
+          localStorage.removeItem("currentFamilyTree");
+          setCurrentFamily(null);
+        }
+      }
+    }
+  }, [savedFamilies]);
+
+  // Persist current family tree to localStorage whenever it changes
+  useEffect(() => {
+    if (currentFamily && nodes.length > 0) {
+      const familyData = {
+        name: currentFamily,
+        nodes,
+        edges,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem("currentFamilyTree", JSON.stringify(familyData));
+    }
+  }, [currentFamily, nodes, edges]);
+
+  const loadSavedFamilies = async () => {
+    if (!userId) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/family-tree`, {
+        headers: {
+          "X-User-ID": userId,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load saved families");
+      }
+
+      const families = await response.json();
+      setSavedFamilies(families);
+    } catch (error) {
+      console.error("Error loading saved families:", error);
+    }
+  };
+
+  const loadPersistedFamily = () => {
+    try {
+      const persistedData = localStorage.getItem("currentFamilyTree");
+      if (persistedData) {
+        const familyData = JSON.parse(persistedData);
+        // Only load if it's recent (within last 24 hours)
+        const oneDay = 24 * 60 * 60 * 1000;
+        if (Date.now() - familyData.timestamp < oneDay) {
+          setCurrentFamily(familyData.name);
+          setNodes(addCallbacksToNodes(familyData.nodes));
+          setEdges(familyData.edges);
+          setShareableLink(
+            `${window.location.href}?family=${encodeURIComponent(
+              familyData.name
+            )}`
+          );
+        } else {
+          // Clear old data
+          localStorage.removeItem("currentFamilyTree");
+        }
+      }
+    } catch (error) {
+      console.error("Error loading persisted family:", error);
+      localStorage.removeItem("currentFamilyTree");
+    }
+  };
+
+  // Function to save current family tree to server
+  const saveFamilyTree = async () => {
+    if (!currentFamily || !userId) {
+      alert("No family selected or user not authenticated.");
+      return;
+    }
+
+    // Prompt user for preferred family name
+    const preferredName = prompt(
+      "Enter a name for this family tree:",
+      currentFamily
+    );
+
+    if (!preferredName || !preferredName.trim()) {
+      alert("Family name is required to save.");
+      return;
+    }
+
+    const trimmedName = preferredName.trim();
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/family-tree`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-ID": userId,
+        },
+        body: JSON.stringify({
+          name: trimmedName,
+          data: { nodes, edges },
+        }),
+      });
+
+      if (response.status === 409) {
+        alert(
+          `A family tree with the name "${trimmedName}" already exists. Please choose a different name.`
+        );
+        return;
+      }
+
+      if (!response.ok) {
+        let errorText = await response.text();
+        let errorMsg = errorText;
+        try {
+          const errorObj = JSON.parse(errorText);
+          errorMsg = errorObj.details || errorObj.error || errorText;
+        } catch {}
+        alert(`Failed to save new family tree. Server response: ${errorMsg}`);
+        return;
+      }
+      const result = await response.json();
+      alert(
+        `Family tree saved successfully as '${trimmedName}'.\nAccess Code: ${result.accessCode}`
+      );
+
+      // Update current family info
+      setCurrentFamily(trimmedName);
+      setCurrentFamilyId(result.family.id);
+      setAccessCode(result.accessCode);
+      setIsAdmin(true); // Creator is automatically an admin
+
+      // Reload saved families to update the list
+      loadSavedFamilies();
+    } catch (error) {
+      console.error("Error saving family tree:", error);
+      alert("Error saving family tree. See console for details.");
+    }
+  };
 
   // Helper function to ensure all nodes have the required callbacks
   const addCallbacksToNodes = (nodeList) => {
@@ -420,10 +696,8 @@ const Flow = () => {
 
         setNodes((currentNodes) => {
           const updatedNodes = [...currentNodes, newChildNode];
-          const { nodes: layoutedNodes } = getLayoutedElements(
-            updatedNodes,
-            updatedEdges
-          );
+          const { nodes: layoutedNodes, edges: layoutedEdges } =
+            getLayoutedElements(updatedNodes, updatedEdges);
           return addCallbacksToNodes(layoutedNodes);
         });
 
@@ -468,10 +742,8 @@ const Flow = () => {
 
         setNodes((currentNodes) => {
           const updatedNodes = [...currentNodes, newSpouseNode];
-          const { nodes: layoutedNodes } = getLayoutedElements(
-            updatedNodes,
-            updatedEdges
-          );
+          const { nodes: layoutedNodes, edges: layoutedEdges } =
+            getLayoutedElements(updatedNodes, updatedEdges);
           return addCallbacksToNodes(layoutedNodes);
         });
 
@@ -482,45 +754,228 @@ const Flow = () => {
     });
   }
 
-  const handleSelectFamily = (familyName) => {
-    const template = familyTemplates[familyName];
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-      template.nodes,
-      template.edges
-    );
-
-    setNodes(addCallbacksToNodes(layoutedNodes));
-    setEdges(layoutedEdges);
-    setCurrentFamily(familyName);
-    setShareableLink(
-      `${window.location.href}?family=${encodeURIComponent(familyName)}`
-    );
+  const handleSelectFamily = (familyName, savedData = null) => {
+    if (savedData) {
+      // Loading a saved family from server
+      const { nodes: layoutedNodes, edges: layoutedEdges } =
+        getLayoutedElements(savedData.nodes, savedData.edges);
+      setNodes(addCallbacksToNodes(layoutedNodes));
+      setEdges(layoutedEdges);
+      setCurrentFamily(familyName);
+      setIsAdmin(true); // If loaded from saved, user is admin
+      setShareableLink(
+        `${window.location.href}?family=${encodeURIComponent(familyName)}`
+      );
+    } else {
+      // Loading a template family
+      const template = familyTemplates[familyName];
+      const { nodes: layoutedNodes, edges: layoutedEdges } =
+        getLayoutedElements(template.nodes, template.edges);
+      setNodes(addCallbacksToNodes(layoutedNodes));
+      setEdges(layoutedEdges);
+      setCurrentFamily(familyName);
+      setIsAdmin(false);
+      setShareableLink(
+        `${window.location.href}?family=${encodeURIComponent(familyName)}`
+      );
+    }
   };
 
-  const handleCreateNewFamily = (familyName) => {
+  const handleCreateNewFamily = async (familyName) => {
+    if (!userId) {
+      alert("User not authenticated.");
+      return;
+    }
+    // Always use a default structure for new family data
     const newTemplate = {
-      nodes: initialNodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          name: node.data.name,
-          details: node.data.details,
-        },
-      })),
-      edges: [...initialEdges],
+      nodes:
+        Array.isArray(initialNodes) && initialNodes.length > 0
+          ? initialNodes.map((node) => ({
+              ...node,
+              data: {
+                ...node.data,
+                name: node.data.name,
+                details: node.data.details,
+              },
+            }))
+          : [],
+      edges:
+        Array.isArray(initialEdges) && initialEdges.length > 0
+          ? [...initialEdges]
+          : [],
     };
-
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
       newTemplate.nodes,
       newTemplate.edges
     );
-
     setNodes(addCallbacksToNodes(layoutedNodes));
     setEdges(layoutedEdges);
     setCurrentFamily(familyName);
+    setIsAdmin(true); // Creator is admin
     setShareableLink(
       `${window.location.href}?family=${encodeURIComponent(familyName)}`
     );
+    try {
+      const response = await fetch(`${API_BASE_URL}/family-tree`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-ID": userId,
+        },
+        body: JSON.stringify({
+          name: familyName,
+          data: { nodes: layoutedNodes, edges: layoutedEdges },
+        }),
+      });
+      if (response.status === 409) {
+        alert(
+          `A family tree with the name "${familyName}" already exists. Please choose a different name.`
+        );
+        return;
+      }
+      if (!response.ok) {
+        let errorText = await response.text();
+        let errorMsg = errorText;
+        try {
+          const errorObj = JSON.parse(errorText);
+          errorMsg = errorObj.details || errorObj.error || errorText;
+        } catch {}
+        alert(`Failed to save new family tree. Server response: ${errorMsg}`);
+        return;
+      }
+      const result = await response.json();
+      setCurrentFamilyId(result.family.id);
+      setAccessCode(result.accessCode); // Unique code for users
+      setIsAdmin(true);
+      loadSavedFamilies();
+    } catch (error) {
+      alert(`Error saving new family tree: ${error?.message || error}`);
+      console.error("Error saving new family tree:", error);
+    }
+  };
+
+  // Function to access family tree with access code
+  const accessFamilyWithCode = async (familyName, accessCode) => {
+    if (!userId) {
+      alert("User not authenticated.");
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/family-tree/access`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-ID": userId,
+        },
+        body: JSON.stringify({
+          familyName,
+          accessCode,
+        }),
+      });
+      if (!response.ok) {
+        if (response.status === 403) {
+          alert("Invalid family name or access code.");
+        } else {
+          throw new Error("Failed to access family tree");
+        }
+        return;
+      }
+      const result = await response.json();
+      const { family, isAdmin: userIsAdmin } = result;
+      const { nodes: layoutedNodes, edges: layoutedEdges } =
+        getLayoutedElements(family.data.nodes, family.data.edges);
+      setNodes(addCallbacksToNodes(layoutedNodes));
+      setEdges(layoutedEdges);
+      setCurrentFamily(family.name);
+      setCurrentFamilyId(family.id);
+      setAccessCode(family.access_code);
+      setIsAdmin(userIsAdmin);
+      setShareableLink(
+        `${window.location.href}?family=${encodeURIComponent(family.name)}`
+      );
+      alert(`Successfully accessed "${family.name}" family tree.`);
+    } catch (error) {
+      console.error("Error accessing family tree:", error);
+      alert("Error accessing family tree. See console for details.");
+    }
+  };
+
+  // Function to add admin to family
+  const addAdminToFamily = async (newAdminId) => {
+    if (!userId || !currentFamilyId) {
+      alert("User not authenticated or no family selected.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/family-tree/${currentFamilyId}/admin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-ID": userId,
+          },
+          body: JSON.stringify({
+            newAdminId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          alert("Only admins can add other admins.");
+        } else if (response.status === 409) {
+          alert("User is already an admin of this family.");
+        } else {
+          throw new Error("Failed to add admin");
+        }
+        return;
+      }
+
+      alert("Admin added successfully!");
+    } catch (error) {
+      console.error("Error adding admin:", error);
+      alert("Error adding admin. See console for details.");
+    }
+  };
+
+  // Function to regenerate access code
+  const regenerateAccessCode = async () => {
+    if (!userId || !currentFamilyId) {
+      alert("User not authenticated or no family selected.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/family-tree/${currentFamilyId}/regenerate-code`,
+        {
+          method: "POST",
+          headers: {
+            "X-User-ID": userId,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          alert("Only admins can regenerate access codes.");
+        } else {
+          throw new Error("Failed to regenerate access code");
+        }
+        return;
+      }
+
+      const result = await response.json();
+      setAccessCode(result.accessCode);
+      alert(
+        `Access code regenerated successfully!\nNew Code: ${result.accessCode}`
+      );
+    } catch (error) {
+      console.error("Error regenerating access code:", error);
+      alert("Error regenerating access code. See console for details.");
+    }
   };
 
   const onConnect = useCallback(
@@ -656,6 +1111,8 @@ const Flow = () => {
       <FamilySelector
         onSelectFamily={handleSelectFamily}
         onCreateNew={handleCreateNewFamily}
+        savedFamilies={savedFamilies}
+        onAccessWithCode={accessFamilyWithCode}
       />
     );
   }
@@ -708,7 +1165,13 @@ const Flow = () => {
         {/* Family Info */}
         <Panel position="bottom-left" className="control-panel">
           <div className="panel-section">
-            <h4>{currentFamily}</h4>
+            <input
+              type="text"
+              value={currentFamily || ""}
+              onChange={(e) => setCurrentFamily(e.target.value)}
+              className="family-name-input"
+              placeholder="Family name"
+            />
             <button className="control-btn" onClick={copyShareableLink}>
               🔗 Copy Link
             </button>
@@ -728,12 +1191,50 @@ const Flow = () => {
             <button className="control-btn" onClick={exportAsImage}>
               📷 Export PNG
             </button>
+            <button className="control-btn" onClick={saveFamilyTree}>
+              💾 Save Family Tree
+            </button>
             <button className="control-btn" onClick={toggleTheme}>
               {theme === "light" ? "🌙 Dark" : "☀️ Light"}
             </button>
           </div>
         </Panel>
 
+        {/* Admin Dashboard as a draggable, resizable modal overlay */}
+        {isAdmin && showAdminDashboard && (
+          <Draggable handle=".admin-dashboard-modal-header">
+            <AdminDashboard
+              currentFamily={currentFamily}
+              currentFamilyId={currentFamilyId}
+              accessCode={accessCode}
+              userId={userId || ""}
+              onRegenerateCode={regenerateAccessCode}
+              onAddAdmin={addAdminToFamily}
+              theme={theme}
+              compact={true}
+              showQuickAction={false}
+            />
+          </Draggable>
+        )}
+        {isAdmin && !showAdminDashboard && (
+          <button
+            style={{
+              position: "fixed",
+              top: 20,
+              right: 20,
+              zIndex: 1001,
+              background: theme === "dark" ? "#333" : "#fff",
+              border: "1px solid #888",
+              borderRadius: 6,
+              padding: "6px 14px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+            onClick={() => setShowAdminDashboard(true)}
+          >
+            Open Admin Dashboard
+          </button>
+        )}
         <Background color={theme === "dark" ? "#333" : "#aaa"} gap={16} />
       </ReactFlow>
     </div>
