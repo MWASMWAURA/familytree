@@ -131,8 +131,11 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
 
   // Add hierarchy nodes to dagre
   hierarchyNodes.forEach((node) => {
+    const hasSpouse = spouseEdges.some(
+      (edge) => edge.source === node.id || edge.target === node.id
+    );
     layoutGraph.setNode(node.id, {
-      width: nodeWidth,
+      width: hasSpouse ? nodeWidth + 200 : nodeWidth,
       height: nodeHeight,
     });
   });
@@ -164,10 +167,10 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
         if (isHorizontal) {
           // Horizontal layout: place spouse below partner
           adjustedX = partnerPosition.x - nodeWidth / 2;
-          adjustedY = partnerPosition.y + nodeHeight + 50; // More space below partner
+          adjustedY = partnerPosition.y + nodeHeight + 18; // More space below partner
         } else {
           // Vertical layout: place spouse to the right of partner
-          adjustedX = partnerPosition.x + nodeWidth + 60; // More space to the right of partner
+          adjustedX = partnerPosition.x + nodeWidth + 24; // More space to the right of partner
           adjustedY = partnerPosition.y - nodeHeight / 2;
         }
       } else {
@@ -878,19 +881,55 @@ const Flow = () => {
     });
   }
 
-  const handleSelectFamily = (family) => {
+  const handleSelectFamily = async (family) => {
     if (typeof family === "object" && family.data) {
-      // Loading a saved family from server
-      const { nodes: layoutedNodes, edges: layoutedEdges } =
-        getLayoutedElements(family.data.nodes, family.data.edges);
-      setNodes(addCallbacksToNodes(layoutedNodes));
-      setEdges(layoutedEdges);
-      setCurrentFamily(family.name);
-      setCurrentFamilyId(family.id);
-      setIsAdmin(true); // If loaded from saved, user is admin
-      setShareableLink(
-        `${window.location.href}?family=${encodeURIComponent(family.name)}`
-      );
+      // Loading a saved family from server -  ALWAYS fetch fresh data
+      try {
+        // fetch the latest data from the database
+        const response = await fetch(
+          `${API_BASE_URL}/family-tree/${family.id}`,
+          {
+            headers: {
+              "X-User-ID": userId,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to load latest family tree from server");
+        }
+        const freshFamilyData = await response.json();
+        // use the fresh data from database
+        const { nodes: layoutedNodes, edges: layoutedEdges } =
+          getLayoutedElements(
+            freshFamilyData.data.nodes,
+            freshFamilyData.data.edges
+          );
+
+        setNodes(addCallbacksToNodes(layoutedNodes));
+        setEdges(layoutedEdges);
+        setCurrentFamily(freshFamilyData.name);
+        setCurrentFamilyId(freshFamilyData.id);
+        setIsAdmin(true); // If loaded from saved, user is admin
+        setShareableLink(
+          `${window.location.href}?family=${encodeURIComponent(
+            freshFamilyData.name
+          )}`
+        );
+      } catch (error) {
+        console.error("Error fetching latest family data:", error);
+        //fallback to existing data if fetch fails
+        const { nodes: layoutedNodes, edges: layoutedEdges } =
+          getLayoutedElements(family.data.nodes, family.data.edges);
+        setNodes(addCallbacksToNodes(layoutedNodes));
+        setEdges(layoutedEdges);
+        setCurrentFamily(family.name);
+        setCurrentFamilyId(family.id);
+        setIsAdmin(true); // If loaded from saved, user is admin
+        setShareableLink(
+          `${window.location.href}?family=${encodeURIComponent(family.name)}`
+        );
+      }
     } else {
       // Loading a template family
       const familyName = family;
