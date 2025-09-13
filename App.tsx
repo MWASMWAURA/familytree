@@ -1,6 +1,7 @@
 import FamilyTreeNode from "./FamilyTreeNode";
 import AdminDashboard from "./src/components/AdminDashboard";
 import React, { useState, useCallback, useRef, useEffect } from "react";
+
 import {
   Background,
   ReactFlow,
@@ -19,6 +20,61 @@ import html2canvas from "html2canvas";
 import "@xyflow/react/dist/style.css";
 import { initialNodes, initialEdges } from "./initialElements";
 import Draggable from "react-draggable";
+import { toPng } from "html-to-image";
+
+// Add this helper function to calculate bounds manually
+const getNodesBounds = (nodes) => {
+  if (nodes.length === 0) return { x: 0, y: 0, width: 0, height: 0 };
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  nodes.forEach((node) => {
+    const x = node.position.x;
+    const y = node.position.y;
+    const width = 140; // Standard node width
+    const height = 80; // Standard node height
+
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + width);
+    maxY = Math.max(maxY, y + height);
+  });
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+};
+
+// Add this helper function to calculate viewport transform
+const getViewportForBounds = (bounds, width, height, minZoom, maxZoom) => {
+  const xZoom = width / bounds.width;
+  const yZoom = height / bounds.height;
+  const zoom = Math.min(xZoom, yZoom);
+  const clampedZoom = Math.min(Math.max(zoom, minZoom), maxZoom);
+
+  const centerX = bounds.x + bounds.width / 2;
+  const centerY = bounds.y + bounds.height / 2;
+  const x = width / 2 - centerX * clampedZoom;
+  const y = height / 2 - centerY * clampedZoom;
+
+  return { x, y, zoom: clampedZoom };
+};
+
+function downloadImage(dataUrl, filename) {
+  const a = document.createElement("a");
+  a.setAttribute("download", filename);
+  a.setAttribute("href", dataUrl);
+  a.click();
+}
+
+// const imageWidth = 1024;
+// const imageHeight = 768;
 
 // API base URL - adjust if server is running on different port
 const API_BASE_URL = "http://localhost:3001/api";
@@ -1077,96 +1133,147 @@ const Flow = () => {
 
   const exportAsImage = useCallback(async () => {
     try {
-      const { getNodesBounds, getViewportForBounds } = await import(
-        "@xyflow/react"
+      // Hide UI elements temporarily
+      const controlPanels = document.querySelectorAll(".control-panel");
+      const adminDashboard = document.querySelector(".admin-dashboard-modal");
+      const attribution = document.querySelector(".react-flow__attribution");
+
+      const originalDisplays = Array.from(controlPanels).map(
+        (panel) => panel.style.display
       );
+      const originalAdminDisplay = adminDashboard?.style.display;
+      const originalAttributionDisplay = attribution?.style.display;
 
-      // Get bounds of all nodes and edges
-      const bounds = getNodesBounds(nodes);
-
-      // Add padding around the bounds
-      const padding = 100;
-      const boundsWithPadding = {
-        x: bounds.x - padding,
-        y: bounds.y - padding,
-        width: bounds.width + padding * 2,
-        height: bounds.height + padding * 2,
-      };
-
-      // Calculate viewport for the bounds
-      const viewport = getViewportForBounds(
-        boundsWithPadding,
-        2000,
-        2000,
-        0.1,
-        2,
-        0.1
-      );
-
-      // Get the React Flow instance
-      const reactFlowInstance =
-        reactFlowWrapper.current?.querySelector(".react-flow");
-      if (!reactFlowInstance) {
-        throw new Error("React Flow instance not found");
-      }
-
-      // Use html2canvas to capture the entire React Flow container
-      const canvas = await html2canvas(reactFlowInstance, {
-        backgroundColor: theme === "dark" ? "#1a1a1a" : "#ffffff",
-        scale: 2,
-        width: 2000,
-        height: 2000,
-        x: viewport.x,
-        y: viewport.y,
-        useCORS: true,
-        allowTaint: true,
-        ignoreElements: (element) => {
-          // Only ignore control panels and UI elements, but include the main flow
-          return (
-            element.classList?.contains("control-panel") ||
-            element.classList?.contains("react-flow__minimap") ||
-            element.classList?.contains("react-flow__controls") ||
-            element.classList?.contains("react-flow__panel")
-          );
-        },
+      // Hide elements
+      controlPanels.forEach((panel) => {
+        panel.style.display = "none";
       });
-
-      // Create download link
-      const link = document.createElement("a");
-      link.download = `${currentFamily || "family-tree"}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } catch (error) {
-      console.error("Error exporting image:", error);
-
-      // Fallback to capturing the entire container
-      const reactFlowElement =
-        reactFlowWrapper.current?.querySelector(".react-flow");
-      if (reactFlowElement) {
-        try {
-          const canvas = await html2canvas(reactFlowElement, {
-            backgroundColor: theme === "dark" ? "#1a1a1a" : "#ffffff",
-            scale: 2,
-            ignoreElements: (element) => {
-              // Ignore only UI control elements
-              return (
-                element.classList?.contains("control-panel") ||
-                element.classList?.contains("react-flow__minimap") ||
-                element.classList?.contains("react-flow__controls") ||
-                element.classList?.contains("react-flow__panel")
-              );
-            },
-          });
-          const link = document.createElement("a");
-          link.download = `${currentFamily || "family-tree"}.png`;
-          link.href = canvas.toDataURL();
-          link.click();
-        } catch (fallbackError) {
-          console.error("Fallback export also failed:", fallbackError);
-        }
+      if (adminDashboard) {
+        adminDashboard.style.display = "none";
       }
+      if (attribution) {
+        attribution.style.display = "none";
+      }
+
+      // CRITICAL: Temporarily disable animations and fix edge styles for export
+      const tempEdges = edges.map((edge) => ({
+        ...edge,
+        animated: false, // Disable animation
+        style: {
+          ...edge.style,
+          // Ensure visible stroke
+          stroke: edge.style?.stroke || "#b1b1b7",
+          strokeWidth: edge.style?.strokeWidth || 2,
+        },
+      }));
+
+      // Update edges temporarily (this will force re-render without animations)
+      setEdges(tempEdges);
+
+      // Wait for the edge update to render
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Follow the exact same pattern as the working example
+      const nodesBounds = getNodesBounds(nodes);
+      const padding = 200; //extra padding for large trees
+      // calculate dynamic image dimensions based on content
+      const minWidth = 800;
+      const minHeight = 600;
+      const maxWidth = 4000; // 4K width limit
+      const maxHeight = 4000; // 4K height limit
+      // Base dimensions on content with generous padding
+      let imageWidth = Math.max(
+        minWidth,
+        Math.min(maxWidth, nodesBounds.width + padding * 2)
+      );
+      let imageHeight = Math.max(
+        minHeight,
+        Math.min(maxHeight, nodesBounds.height + padding * 2)
+      );
+
+      // For very wide trees, use wider aspect ratio
+      if (nodesBounds.width > nodesBounds.height * 2) {
+        imageWidth = Math.min(maxWidth, nodesBounds.width + padding * 2);
+        imageHeight = Math.max(minHeight, imageWidth * 0.6); // 5:3 aspect ratio
+      }
+      // For very tall trees, use taller aspect ratio
+      else if (nodesBounds.height > nodesBounds.width * 2) {
+        imageHeight = Math.min(maxHeight, nodesBounds.height + padding * 2);
+        imageWidth = Math.max(minWidth, imageHeight * 0.6); // 3:5 aspect ratio
+      }
+
+      console.log(
+        `Exporting ${nodes.length} nodes with dimensions: ${imageWidth}x${imageHeight}`
+      );
+      console.log(`Content bounds: ${nodesBounds.width}x${nodesBounds.height}`);
+      const viewport = getViewportForBounds(
+        nodesBounds,
+        imageWidth,
+        imageHeight,
+        0.1,
+        1.5
+      );
+
+      const dataUrl = await toPng(
+        document.querySelector(".react-flow__viewport"),
+        {
+          backgroundColor: "transparent",
+          width: imageWidth,
+          height: imageHeight,
+          pixelRatio: 1, //high-res
+          style: {
+            width: imageWidth,
+            height: imageHeight,
+            transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+          },
+        }
+      );
+
+      // Restore original edges (with animations)
+      setEdges(edges);
+
+      // Restore UI elements
+      controlPanels.forEach((panel, index) => {
+        panel.style.display = originalDisplays[index] || "";
+      });
+      if (adminDashboard) {
+        adminDashboard.style.display = originalAdminDisplay || "";
+      }
+      if (attribution) {
+        attribution.style.display = originalAttributionDisplay || "";
+      }
+
+      // Download
+      const timestamp = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/:/g, "-");
+      const filename = `${currentFamily || "family-tree"}-${timestamp}.png`;
+      downloadImage(dataUrl, filename);
+
+      console.log("Family tree exported successfully!");
+    } catch (error) {
+      console.error("Export failed:", error);
+
+      // Emergency restore - restore original edges and UI
+      setEdges(edges);
+      const controlPanels = document.querySelectorAll(".control-panel");
+      const adminDashboard = document.querySelector(".admin-dashboard-modal");
+      const attribution = document.querySelector(".react-flow__attribution");
+
+      controlPanels.forEach((panel) => {
+        panel.style.display = "";
+      });
+      if (adminDashboard) {
+        adminDashboard.style.display = "";
+      }
+      if (attribution) {
+        attribution.style.display = "";
+      }
+
+      alert("Export failed. Please try again.");
     }
-  }, [theme, currentFamily, nodes, edges]);
+  }, [currentFamily, nodes, edges, setEdges]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
