@@ -437,7 +437,6 @@ const Flow = () => {
     };
 
     initializeUserId();
-    loadPersistedFamily();
   }, []);
 
   // Load saved families when userId is available
@@ -446,25 +445,6 @@ const Flow = () => {
       loadSavedFamilies();
     }
   }, [userId]);
-
-  // After saved families are loaded, check if persisted family exists in backend
-  useEffect(() => {
-    if (savedFamilies && savedFamilies.length > 0) {
-      const persistedData = localStorage.getItem("currentFamilyTree");
-      if (persistedData) {
-        const familyData = JSON.parse(persistedData);
-        const existingFamily = savedFamilies.find(
-          (f) => f.name === familyData.name
-        );
-        if (existingFamily) {
-          setCurrentFamilyId(existingFamily.id);
-        } else {
-          localStorage.removeItem("currentFamilyTree");
-          setCurrentFamily(null);
-        }
-      }
-    }
-  }, [savedFamilies]);
 
   // Persist current family tree to localStorage whenever it changes
   useEffect(() => {
@@ -499,8 +479,8 @@ const Flow = () => {
       console.error("Error loading saved families:", error);
     }
   };
-
-  const loadPersistedFamily = () => {
+  // Fix the loadPersistedFamily function to properly sync with server data
+  const loadPersistedFamily = async () => {
     try {
       const persistedData = localStorage.getItem("currentFamilyTree");
       if (persistedData) {
@@ -508,6 +488,47 @@ const Flow = () => {
         // Only load if it's recent (within last 24 hours)
         const oneDay = 24 * 60 * 60 * 1000;
         if (Date.now() - familyData.timestamp < oneDay) {
+          // check if this family exists in server and load the latest version
+          try {
+            const response = await fetch(`${API_BASE_URL}/family-tree`, {
+              headers: {
+                "X-User-ID": userId,
+              },
+            });
+
+            if (response.ok) {
+              const families = await response.json();
+              const existingFamily = families.find(
+                (f) => f.name === familyData.name
+              );
+
+              if (existingFamily) {
+                // Load from server (most up-to-date version)
+                const { nodes: layoutedNodes, edges: layoutedEdges } =
+                  getLayoutedElements(
+                    existingFamily.data.nodes,
+                    existingFamily.data.edges
+                  );
+                setNodes(addCallbacksToNodes(layoutedNodes));
+                setEdges(layoutedEdges);
+                setCurrentFamily(existingFamily.name);
+                setCurrentFamilyId(existingFamily.id);
+                setIsAdmin(true);
+                setShareableLink(
+                  `${window.location.href}?family=${encodeURIComponent(
+                    existingFamily.name
+                  )}`
+                );
+                return;
+              }
+            }
+          } catch (serverError) {
+            console.warn(
+              "Could not load from server, using local data:",
+              serverError
+            );
+          }
+          //fallback to local data if server load fails or family doesn't exist
           setCurrentFamily(familyData.name);
           setNodes(addCallbacksToNodes(familyData.nodes));
           setEdges(familyData.edges);
@@ -526,7 +547,12 @@ const Flow = () => {
       localStorage.removeItem("currentFamilyTree");
     }
   };
-
+  // Load persisted family when userId is available
+  useEffect(() => {
+    if (userId) {
+      loadPersistedFamily();
+    }
+  }, [userId]);
   // Function to save current family tree to server
   const saveFamilyTree = async () => {
     if (!currentFamily || !userId) {
@@ -562,6 +588,15 @@ const Flow = () => {
           return;
         }
 
+        // Update localStorage with the saved data
+        const familyData = {
+          name: currentFamily,
+          nodes,
+          edges,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem("currentFamilyTree", JSON.stringify(familyData));
+
         alert("Family tree updated successfully.");
       } else {
         // Create new family tree using current family name
@@ -596,6 +631,7 @@ const Flow = () => {
           alert(`Failed to save new family tree. Server response: ${errorMsg}`);
           return;
         }
+
         const result = await response.json();
         alert(
           `Family tree saved successfully as '${trimmedName}'.\nAccess Code: ${result.accessCode}`
@@ -605,17 +641,25 @@ const Flow = () => {
         setCurrentFamily(trimmedName);
         setCurrentFamilyId(result.family.id);
         setAccessCode(result.accessCode);
-        setIsAdmin(true); // Creator is automatically an admin
+        setIsAdmin(true);
+
+        // Update localStorage with the saved data
+        const familyData = {
+          name: trimmedName,
+          nodes,
+          edges,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem("currentFamilyTree", JSON.stringify(familyData));
 
         // Reload saved families to update the list
-        loadSavedFamilies();
+        await loadSavedFamilies();
       }
     } catch (error) {
       console.error("Error saving family tree:", error);
       alert("Error saving family tree. See console for details.");
     }
   };
-
   // Helper function to ensure all nodes have the required callbacks
   const addCallbacksToNodes = (nodeList) => {
     return nodeList.map((node) => ({
