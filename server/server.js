@@ -2,37 +2,45 @@ const express = require('express');
 const { Pool } = require('pg');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+
+const app = express();
+
+const corsOptions = {
+  origin: ['http://localhost:5173','http://localhost:5178','http://localhost:5174','http://localhost:5176','http://localhost:3000', 'http://localhost:8080'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID', 'x-user-id'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  preflightContinue: false,
+};
+
+app.use(cors(corsOptions));
+app.use(bodyParser.json());
+
 const crypto = require('crypto');
+const { generateToken, validateAccessToken } = require('./token-feature');
 
 // Use environment variable or paste your Neon connection string here
 const CONNECTION_STRING = "postgresql://neondb_owner:npg_bv1YBzlLVnp6@ep-rapid-brook-adbgxz6b-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+
+process.env.CONNECTION_STRING = CONNECTION_STRING;
 
 const pool = new Pool({
   connectionString: CONNECTION_STRING,
 });
 
-const app = express();
 const PORT = process.env.PORT || 3001;
-
-app.use(cors({
-  origin: ['http://localhost:5173','http://localhost:5174','http://localhost:3000', 'http://localhost:8080'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID', 'x-user-id'],
-  credentials: true
-}));
-app.use(bodyParser.json());
-
 // Middleware to get or create user ID from request and ensure it exists in DB
 const getUserId = async (req, res, next) => {
   try {
-    let userId = req.headers['x-user-id'];
+    let userId = req.headers['x-user-id'] || req.headers['X-User-ID'];
 
     if (!userId) {
       // Generate a new user ID if not provided
+
       userId = crypto.randomUUID();
       res.setHeader('X-User-ID', userId);
     }
-
     // Ensure user exists in DB
     await pool.query(
       `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
@@ -212,7 +220,7 @@ app.put('/api/family-tree/:id', getUserId, async (req, res) => {
   }
 
   try {
-    // Check if user has access to this family
+    // Check if user has access to this family (is admin or creator)
     const accessCheck = await pool.query(`
       SELECT ft.*, fa.user_id as admin_user_id
       FROM family_trees ft
@@ -221,25 +229,39 @@ app.put('/api/family-tree/:id', getUserId, async (req, res) => {
     `, [userId, id]);
 
     if (accessCheck.rows.length === 0) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Family not found' });
     }
+
+    const family = accessCheck.rows[0];
+    const isAdmin = family.admin_user_id !== null || family.admin_id === userId;
+
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Access denied - not an admin' });
+    }
+
+    // Get current data before update for logging
+    const currentDataResult = await pool.query(
+      'SELECT data FROM family_trees WHERE id = $1',
+      [id]
+    );
+    const oldData = currentDataResult.rows[0].data;
 
     // Update the family tree
     const result = await pool.query(
-      'UPDATE family_trees SET data = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      'UPDATE family_trees SET data = $1 WHERE id = $2 RETURNING *',
       [data, id]
     );
 
-    // Log the update activity
+    // Log the update activity with old and new data
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'update', { updatedFields: Object.keys(data) }]
+      [id, userId, 'update', { oldData, newData: data }]
     );
 
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update family tree' });
+    console.error('Error updating family tree:', err);
+    res.status(500).json({ error: 'Failed to update family tree', details: err.message });
   }
 });
 
@@ -390,6 +412,39 @@ app.post('/api/family-tree/:id/regenerate-code', getUserId, async (req, res) => 
     res.status(500).json({ error: 'Failed to regenerate access code' });
   }
 });
+// Endpoint to undo an action based on log entry
+app.post('/api/family-tree/:id/undo/:logId', getUserId, async (req, res) => {
+  const { id, logId } = req.params;
+  const userId = req.userId;
+
+  try {
+    // Check if current user is admin of this family
+    const adminCheck = await pool.query(`
+      SELECT * FROM family_admins
+      WHERE family_id = $1 AND user_id = $2
+    `, [id, userId]);
+
+    if (adminCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Only admins can regenerate access codes: Access denied to view logs' });
+    }
+
+    // Get the log entry
+    const logResult = await pool.query(`
+      SELECT * FROM activity_logs WHERE id = $1 AND family_id = $2
+    `, [logId, id]);
+      if (logResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Log entry not found' });
+    }
+
+    // For now, just return success - implement specific undo logic based on action type
+    res.json({ message: 'Undo functionality not yet implemented' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to undo action' });
+  }
+});
+
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -292,7 +292,7 @@ const FamilySelector = ({
                 <button
                   key={family.id}
                   className="family-option saved"
-                  onClick={() => onSelectFamily(family.name, family.data)}
+                  onClick={() => onSelectFamily(family)}
                 >
                   {family.name} (Admin)
                 </button>
@@ -397,7 +397,7 @@ const FamilySelector = ({
 };
 
 const Flow = () => {
-  const reactFlowWrapper = useRef(null);
+  const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const [theme, setTheme] = useState<string>("light");
   const [nextNodeId, setNextNodeId] = useState<number>(10);
@@ -413,8 +413,8 @@ const Flow = () => {
   const [accessCodeInput, setAccessCodeInput] = useState<string>("");
   const [showAdminDashboard, setShowAdminDashboard] = useState(true);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   // Initialize user ID and load data on component mount
   useEffect(() => {
@@ -453,8 +453,12 @@ const Flow = () => {
       const persistedData = localStorage.getItem("currentFamilyTree");
       if (persistedData) {
         const familyData = JSON.parse(persistedData);
-        const exists = savedFamilies.some((f) => f.name === familyData.name);
-        if (!exists) {
+        const existingFamily = savedFamilies.find(
+          (f) => f.name === familyData.name
+        );
+        if (existingFamily) {
+          setCurrentFamilyId(existingFamily.id);
+        } else {
           localStorage.removeItem("currentFamilyTree");
           setCurrentFamily(null);
         }
@@ -530,62 +534,82 @@ const Flow = () => {
       return;
     }
 
-    // Prompt user for preferred family name
-    const preferredName = prompt(
-      "Enter a name for this family tree:",
-      currentFamily
-    );
-
-    if (!preferredName || !preferredName.trim()) {
-      alert("Family name is required to save.");
-      return;
-    }
-
-    const trimmedName = preferredName.trim();
-
     try {
-      const response = await fetch(`${API_BASE_URL}/family-tree`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-ID": userId,
-        },
-        body: JSON.stringify({
-          name: trimmedName,
-          data: { nodes, edges },
-        }),
-      });
-
-      if (response.status === 409) {
-        alert(
-          `A family tree with the name "${trimmedName}" already exists. Please choose a different name.`
+      if (currentFamilyId) {
+        // Update existing family tree
+        const response = await fetch(
+          `${API_BASE_URL}/family-tree/${currentFamilyId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "X-User-ID": userId,
+            },
+            body: JSON.stringify({
+              data: { nodes, edges },
+            }),
+          }
         );
-        return;
+
+        if (!response.ok) {
+          let errorText = await response.text();
+          let errorMsg = errorText;
+          try {
+            const errorObj = JSON.parse(errorText);
+            errorMsg = errorObj.details || errorObj.error || errorText;
+          } catch {}
+          alert(`Failed to update family tree. Server response: ${errorMsg}`);
+          return;
+        }
+
+        alert("Family tree updated successfully.");
+      } else {
+        // Create new family tree using current family name
+        const trimmedName = currentFamily.trim();
+
+        const response = await fetch(`${API_BASE_URL}/family-tree`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-ID": userId,
+          },
+          body: JSON.stringify({
+            name: trimmedName,
+            data: { nodes, edges },
+          }),
+        });
+
+        if (response.status === 409) {
+          alert(
+            `A family tree with the name "${trimmedName}" already exists. Please change the family name in the input field below and try saving again.`
+          );
+          return;
+        }
+
+        if (!response.ok) {
+          let errorText = await response.text();
+          let errorMsg = errorText;
+          try {
+            const errorObj = JSON.parse(errorText);
+            errorMsg = errorObj.details || errorObj.error || errorText;
+          } catch {}
+          alert(`Failed to save new family tree. Server response: ${errorMsg}`);
+          return;
+        }
+        const result = await response.json();
+        alert(
+          `Family tree saved successfully as '${trimmedName}'.\nAccess Code: ${result.accessCode}`
+        );
+
+        // Update current family info
+        setCurrentFamily(trimmedName);
+        setCurrentFamilyId(result.family.id);
+        setAccessCode(result.accessCode);
+        setIsAdmin(true); // Creator is automatically an admin
+
+        // Reload saved families to update the list
+        loadSavedFamilies();
       }
-
-      if (!response.ok) {
-        let errorText = await response.text();
-        let errorMsg = errorText;
-        try {
-          const errorObj = JSON.parse(errorText);
-          errorMsg = errorObj.details || errorObj.error || errorText;
-        } catch {}
-        alert(`Failed to save new family tree. Server response: ${errorMsg}`);
-        return;
-      }
-      const result = await response.json();
-      alert(
-        `Family tree saved successfully as '${trimmedName}'.\nAccess Code: ${result.accessCode}`
-      );
-
-      // Update current family info
-      setCurrentFamily(trimmedName);
-      setCurrentFamilyId(result.family.id);
-      setAccessCode(result.accessCode);
-      setIsAdmin(true); // Creator is automatically an admin
-
-      // Reload saved families to update the list
-      loadSavedFamilies();
     } catch (error) {
       console.error("Error saving family tree:", error);
       alert("Error saving family tree. See console for details.");
@@ -754,20 +778,22 @@ const Flow = () => {
     });
   }
 
-  const handleSelectFamily = (familyName, savedData = null) => {
-    if (savedData) {
+  const handleSelectFamily = (family) => {
+    if (typeof family === "object" && family.data) {
       // Loading a saved family from server
       const { nodes: layoutedNodes, edges: layoutedEdges } =
-        getLayoutedElements(savedData.nodes, savedData.edges);
+        getLayoutedElements(family.data.nodes, family.data.edges);
       setNodes(addCallbacksToNodes(layoutedNodes));
       setEdges(layoutedEdges);
-      setCurrentFamily(familyName);
+      setCurrentFamily(family.name);
+      setCurrentFamilyId(family.id);
       setIsAdmin(true); // If loaded from saved, user is admin
       setShareableLink(
-        `${window.location.href}?family=${encodeURIComponent(familyName)}`
+        `${window.location.href}?family=${encodeURIComponent(family.name)}`
       );
     } else {
       // Loading a template family
+      const familyName = family;
       const template = familyTemplates[familyName];
       const { nodes: layoutedNodes, edges: layoutedEdges } =
         getLayoutedElements(template.nodes, template.edges);
@@ -1028,8 +1054,9 @@ const Flow = () => {
         boundsWithPadding,
         2000,
         2000,
+        0.1,
         2,
-        2
+        0.1
       );
 
       // Get the React Flow instance
@@ -1106,6 +1133,18 @@ const Flow = () => {
     alert("Shareable link copied to clipboard!");
   };
 
+  // Responsive: re-layout pedigree on window resize
+  React.useEffect(() => {
+    const handleResize = () => {
+      const { nodes: layoutedNodes, edges: layoutedEdges } =
+        getLayoutedElements(nodes, edges);
+      setNodes(addCallbacksToNodes(layoutedNodes));
+      setEdges(layoutedEdges);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [nodes, edges]);
+
   if (!currentFamily) {
     return (
       <FamilySelector
@@ -1165,13 +1204,15 @@ const Flow = () => {
         {/* Family Info */}
         <Panel position="bottom-left" className="control-panel">
           <div className="panel-section">
-            <input
-              type="text"
-              value={currentFamily || ""}
-              onChange={(e) => setCurrentFamily(e.target.value)}
-              className="family-name-input"
-              placeholder="Family name"
-            />
+            {!currentFamilyId && (
+              <input
+                type="text"
+                value={currentFamily || ""}
+                onChange={(e) => setCurrentFamily(e.target.value)}
+                className="family-name-input"
+                placeholder="Family name"
+              />
+            )}
             <button className="control-btn" onClick={copyShareableLink}>
               🔗 Copy Link
             </button>
