@@ -170,7 +170,7 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
           adjustedY = partnerPosition.y + nodeHeight + 18; // More space below partner
         } else {
           // Vertical layout: place spouse to the right of partner
-          adjustedX = partnerPosition.x + nodeWidth + 24; // More space to the right of partner
+          adjustedX = partnerPosition.x + nodeWidth + 18; // More space to the right of partner
           adjustedY = partnerPosition.y - nodeHeight / 2;
         }
       } else {
@@ -784,6 +784,7 @@ const Flow = () => {
             updatedNodes,
             updatedEdges
           );
+
           return addCallbacksToNodes(layoutedNodes);
         });
 
@@ -825,6 +826,8 @@ const Flow = () => {
           const updatedNodes = [...currentNodes, newChildNode];
           const { nodes: layoutedNodes, edges: layoutedEdges } =
             getLayoutedElements(updatedNodes, updatedEdges);
+          // updated edges with the layout edges
+          setEdges(layoutedEdges);
           return addCallbacksToNodes(layoutedNodes);
         });
 
@@ -871,6 +874,8 @@ const Flow = () => {
           const updatedNodes = [...currentNodes, newSpouseNode];
           const { nodes: layoutedNodes, edges: layoutedEdges } =
             getLayoutedElements(updatedNodes, updatedEdges);
+          // updated edges with the layout edges
+          setEdges(layoutedEdges);
           return addCallbacksToNodes(layoutedNodes);
         });
 
