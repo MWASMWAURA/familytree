@@ -1,0 +1,394 @@
+/* Main container for split layout */
+.container {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+/* Left Content Panel */
+.content-panel {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.content-panel h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.content-panel .subtitle {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+}
+
+.feature-list li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.feature-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #4ade80;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4ade80;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+/* Right Panel - Family Selector */
+.family-selector-overlay {
+  flex: 0 0 50%; /* Fixed width at 50% */
+  background: #1a202c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  min-height: 100vh;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+  opacity: 0.5;
+}
+
+.family-selector {
+  background: rgb(83, 105, 146);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 800px;
+  overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+
+}
+
+.family-selector h2 {
+  text-align: center;
+  color: #1a202c;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  font-weight: 600;
+
+}
+
+.family-selector h3 {
+  color: #4a5568;
+  margin: 2rem 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.family-selector h4 {
+  color: #2d3748;
+  margin: 1rem 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Form Sections */
+.existing-families,
+.access-family,
+.create-new-family {
+  margin-bottom: 2rem;
+}
+
+.saved-families {
+  margin-bottom: 1rem;
+}
+
+/* Button Styles */
+.family-option {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.family-option:hover {
+  background: #edf2f7;
+  border-color: #667eea;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.1);
+}
+
+.family-option.saved {
+  background: #e6fffa;
+  border-color: #38b2ac;
+}
+
+.family-option.saved:hover {
+  background: #b2f5ea;
+  border-color: #2c7a7b;
+}
+
+.create-new-btn,
+.access-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: none;
+}
+
+.create-new-btn:hover,
+.access-btn:hover {
+  background: #5a67d8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.access-btn {
+  background: #48bb78;
+}
+
+.access-btn:hover {
+  background: #38a169;
+}
+
+/* Form Inputs */
+.family-name-input,
+.access-code-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+.family-name-input:focus,
+.access-code-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Form Button Groups */
+.create-buttons,
+.access-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.create-btn,
+.access-submit-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.create-btn:hover,
+.access-submit-btn:hover {
+  background: #5a67d8;
+}
+
+.access-submit-btn {
+  background: #48bb78;
+}
+
+.access-submit-btn:hover {
+  background: #38a169;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #c53030;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .content-panel h1 {
+    font-size: 2.5rem;
+  }
+  
+  .content-panel .subtitle {
+    font-size: 1.1rem;
+  }
+  
+  .stats {
+    gap: 1.5rem;
+  }
+  
+  .stat-number {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+  
+  .content-panel {
+    padding: 40px 20px;
+    min-height: 60vh;
+  }
+  
+  .content-panel h1 {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .content-panel .subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .feature-list li {
+    font-size: 1rem;
+    padding: 0.375rem 0;
+    padding-left: 1.25rem;
+  }
+  
+  .stats {
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .stat {
+    min-width: calc(33.333% - 0.75rem);
+  }
+  
+  .stat-number {
+    font-size: 1.75rem;
+  }
+  
+  .family-selector-overlay {
+    padding: 20px;
+    min-height: 40vh;
+  }
+  
+  .family-selector {
+    padding: 24px;
+    max-height: none;
+  }
+  
+  .family-selector h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .family-selector h3 {
+    font-size: 1.1rem;
+    margin: 1.5rem 0 0.75rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-panel {
+    padding: 30px 15px;
+  }
+  
+  .content-panel h1 {
+    font-size: 1.75rem;
+  }
+  
+  .stats {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .stat {
+    min-width: auto;
+  }
+  
+  .family-selector {
+    padding: 20px;
+  }
+  
+  .family-selector h2 {
+    font-size: 1.25rem;
+  }
+}

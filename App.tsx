@@ -1,4 +1,5 @@
 import FamilyTreeNode from "./FamilyTreeNode";
+import "./landing.css";
 import AdminDashboard from "./src/components/AdminDashboard";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 
@@ -335,32 +336,69 @@ const FamilySelector = ({
   };
 
   return (
-    <div className="family-selector-overlay">
-      <div className="family-selector">
-        <h2>Family Tree Manager</h2>
-        <div className="existing-families">
-          {/* <h3>Your Families</h3>
+    <div className="container">
+      {/*left container panel */}
+      <div className="content-panel">
+        <h1>Build and Share Your Family History</h1>
+
+        <p className="subtitle">
+          Create interactive family trees with collaborative editing, secure
+          sharing, and professional export capabilities.
+        </p>
+
+        <ul className="feature-list">
+          <li>Interactive drag-and-drop tree builder</li>
+          <li>Collaborative editing with access codes</li>
+          <li>Multiple layout options (vertical/horizontal)</li>
+          <li>Export high-quality PNG images</li>
+          <li>Cloud storage and auto-save</li>
+          <li>Admin controls and user permissions</li>
+          <li>Cross-device compatibility</li>
+          <li>Dark and light themes</li>
+        </ul>
+
+        <div className="stats">
+          <div className="stat">
+            <span className="stat-number">1000+</span>
+            <span className="stat-label">Families</span>
+          </div>
+          <div className="stat">
+            <span className="stat-number">50K+</span>
+            <span className="stat-label">Tree Nodes</span>
+          </div>
+          <div className="stat">
+            <span className="stat-number">99.9%</span>
+            <span className="stat-label">Uptime</span>
+          </div>
+        </div>
+      </div>
+      {/*right container panel */}
+      <div className="family-selector-overlay">
+        <div className="family-selector">
+          <h2>Family Tree Manager</h2>
+          <div className="existing-families">
+            {/* <h3>Your Families</h3>
           <div style={{ fontSize: "0.95em", color: "#888", marginBottom: 8 }}>
             Only families where you are an admin are shown below. If a family
             exists but you are not an admin, it will not appear here.
           </div> */}
-          {savedFamilies && savedFamilies.length > 0 ? (
-            <div className="saved-families">
-              <h4>Families You Admin</h4>
-              {savedFamilies.map((family) => (
-                <button
-                  key={family.id}
-                  className="family-option saved"
-                  onClick={() => onSelectFamily(family)}
-                >
-                  {family.name} (Admin)
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div>No saved families found.</div>
-          )}
-          {/* <div className="template-families">
+            {savedFamilies && savedFamilies.length > 0 ? (
+              <div className="saved-families">
+                <h4>Families You Admin</h4>
+                {savedFamilies.map((family) => (
+                  <button
+                    key={family.id}
+                    className="family-option saved"
+                    onClick={() => onSelectFamily(family)}
+                  >
+                    {family.name} (Admin)
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div>No saved families found.</div>
+            )}
+            {/* <div className="template-families">
             <h4>Family Templates</h4>
             {Object.keys(familyTemplates).map((familyName) => (
               <button
@@ -372,83 +410,84 @@ const FamilySelector = ({
               </button>
             ))}
           </div> */}
-        </div>
+          </div>
 
-        <div className="access-family">
-          <h3>Access Family Tree</h3>
-          {!showAccessForm ? (
-            <button
-              className="access-btn"
-              onClick={() => setShowAccessForm(true)}
-            >
-              🔓 Access with Code
-            </button>
-          ) : (
-            <div className="access-form">
-              <input
-                type="text"
-                value={accessFamilyName}
-                onChange={(e) => setAccessFamilyName(e.target.value)}
-                placeholder="Family name"
-                className="family-name-input"
-              />
-              <input
-                type="text"
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value)}
-                placeholder="Access code"
-                className="access-code-input"
-              />
-              <div className="access-buttons">
-                <button
-                  onClick={handleAccessWithCode}
-                  className="access-submit-btn"
-                >
-                  Access
-                </button>
-                <button
-                  onClick={() => setShowAccessForm(false)}
-                  className="cancel-btn"
-                >
-                  Cancel
-                </button>
+          <div className="access-family">
+            <h3>Access Family Tree</h3>
+            {!showAccessForm ? (
+              <button
+                className="access-btn"
+                onClick={() => setShowAccessForm(true)}
+              >
+                🔓 Access with Code
+              </button>
+            ) : (
+              <div className="access-form">
+                <input
+                  type="text"
+                  value={accessFamilyName}
+                  onChange={(e) => setAccessFamilyName(e.target.value)}
+                  placeholder="Family name"
+                  className="family-name-input"
+                />
+                <input
+                  type="text"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  placeholder="Access code"
+                  className="access-code-input"
+                />
+                <div className="access-buttons">
+                  <button
+                    onClick={handleAccessWithCode}
+                    className="access-submit-btn"
+                  >
+                    Access
+                  </button>
+                  <button
+                    onClick={() => setShowAccessForm(false)}
+                    className="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div className="create-new-family">
-          <h3>Create New Family</h3>
-          {!showCreateForm ? (
-            <button
-              className="create-new-btn"
-              onClick={() => setShowCreateForm(true)}
-            >
-              + Create New Family Tree
-            </button>
-          ) : (
-            <div className="create-form">
-              <input
-                type="text"
-                value={newFamilyName}
-                onChange={(e) => setNewFamilyName(e.target.value)}
-                placeholder="Enter family name (e.g., 'Wilson Family')"
-                className="family-name-input"
-                autoFocus
-              />
-              <div className="create-buttons">
-                <button onClick={handleCreateNew} className="create-btn">
-                  Create
-                </button>
-                <button
-                  onClick={() => setShowCreateForm(false)}
-                  className="cancel-btn"
-                >
-                  Cancel
-                </button>
+          <div className="create-new-family">
+            <h3>Create New Family</h3>
+            {!showCreateForm ? (
+              <button
+                className="create-new-btn"
+                onClick={() => setShowCreateForm(true)}
+              >
+                + Create New Family Tree
+              </button>
+            ) : (
+              <div className="create-form">
+                <input
+                  type="text"
+                  value={newFamilyName}
+                  onChange={(e) => setNewFamilyName(e.target.value)}
+                  placeholder="Enter family name (e.g., 'Wilson Family')"
+                  className="family-name-input"
+                  autoFocus
+                />
+                <div className="create-buttons">
+                  <button onClick={handleCreateNew} className="create-btn">
+                    Create
+                  </button>
+                  <button
+                    onClick={() => setShowCreateForm(false)}
+                    className="cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
