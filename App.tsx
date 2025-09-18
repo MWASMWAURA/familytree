@@ -79,7 +79,9 @@ function downloadImage(dataUrl, filename) {
 
 // API base URL - adjust if server is running on different port
 const API_BASE_URL =
-  process.env.NODE_ENV === "production" ? "/api" : "http://localhost:3001/api";
+  process.env.VERCEL || process.env.NODE_ENV === "production"
+    ? "/api"
+    : "http://localhost:3001/api";
 
 const nodeTypes = { familyNode: FamilyTreeNode };
 
