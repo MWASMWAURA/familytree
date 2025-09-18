@@ -78,7 +78,8 @@ function downloadImage(dataUrl, filename) {
 // const imageHeight = 768;
 
 // API base URL - adjust if server is running on different port
-const API_BASE_URL = "http://localhost:3001/api";
+const API_BASE_URL =
+  process.env.NODE_ENV === "production" ? "/api" : "http://localhost:3001/api";
 
 const nodeTypes = { familyNode: FamilyTreeNode };
 
