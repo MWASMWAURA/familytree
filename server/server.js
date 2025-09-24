@@ -278,6 +278,115 @@ app.get('/api/family-tree', getUserId, async (req, res) => {
   }
 });
 
+// Endpoint to get hidden families for current user
+app.get('/api/family-tree/hidden', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const result = await pool.query(`
+      SELECT family_id FROM hidden_families
+      WHERE user_id = $1
+    `, [userId]);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch hidden families' });
+  }
+});
+
+// Endpoint to update family tree name (admin only)
+app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  const userId = req.userId;
+
+  console.log('Update family name request:', { id, name, userId, body: req.body });
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+
+  try {
+    // Check if current user is admin of this family
+    const adminCheck = await pool.query(`
+      SELECT * FROM family_admins
+      WHERE family_id = $1 AND user_id = $2
+    `, [id, userId]);
+
+    if (adminCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Only admins can change family name' });
+    }
+
+    // Check if new name already exists
+    const existingFamily = await pool.query(
+      'SELECT * FROM family_trees WHERE LOWER(name) = LOWER($1) AND id != $2',
+      [name.trim(), id]
+    );
+
+    if (existingFamily.rows.length > 0) {
+      return res.status(409).json({ error: 'Family name already exists' });
+    }
+
+    // Get current name for logging
+    const currentFamily = await pool.query('SELECT name FROM family_trees WHERE id = $1', [id]);
+    const oldName = currentFamily.rows[0].name;
+
+    // Update the family name
+    const result = await pool.query(
+      'UPDATE family_trees SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [name.trim(), id]
+    );
+
+    // Log the name change
+    await pool.query(
+      `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
+      [id, userId, 'change_name', { oldName, newName: name.trim() }]
+    );
+
+    res.json({ family: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update family name' });
+  }
+});
+
+// Endpoint to get messages/notifications for current user
+app.get('/api/messages', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    // Get messages from activity logs where user is affected
+    const result = await pool.query(`
+      SELECT
+        al.id,
+        al.action,
+        al.details,
+        al.created_at,
+        ft.name as family_name,
+        CASE
+          WHEN al.action = 'change_name' THEN 'Family name changed from "' || al.details->>'oldName' || '" to "' || al.details->>'newName' || '"'
+          WHEN al.action = 'delete_family' THEN 'Family "' || al.details->>'familyName' || '" was deleted by admin'
+          WHEN al.action = 'regenerate_code' THEN 'Access code for "' || ft.name || '" was changed'
+          ELSE al.action
+        END as message
+      FROM activity_logs al
+      JOIN family_trees ft ON al.family_id = ft.id
+      LEFT JOIN family_admins fa ON ft.id = fa.family_id AND fa.user_id = $1
+      WHERE (fa.user_id = $1 OR ft.admin_id = $1)
+        AND al.user_id != $1
+        AND al.action IN ('change_name', 'delete_family', 'regenerate_code')
+      ORDER BY al.created_at DESC
+      LIMIT 50
+    `, [userId]);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
 // Endpoint to access family tree with access code
 app.post('/api/family-tree/access', getUserId, async (req, res) => {
   const { familyName, accessCode } = req.body;
@@ -478,6 +587,60 @@ app.get('/api/family-tree/:id/logs', getUserId, async (req, res) => {
   }
 });
 
+// Endpoint to update family name (admin only)
+app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  const userId = req.userId;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Family name is required' });
+  }
+
+  try {
+    // Check if current user is admin of this family
+    const adminCheck = await pool.query(`
+      SELECT * FROM family_admins
+      WHERE family_id = $1 AND user_id = $2
+    `, [id, userId]);
+
+    if (adminCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Only admins can change family name' });
+    }
+
+    // Check if new name already exists
+    const existingFamily = await pool.query(
+      'SELECT * FROM family_trees WHERE LOWER(name) = LOWER($1) AND id != $2',
+      [name.trim(), id]
+    );
+
+    if (existingFamily.rows.length > 0) {
+      return res.status(409).json({ error: 'Family name already exists' });
+    }
+
+    // Get old name for logging
+    const oldFamilyData = await pool.query('SELECT name FROM family_trees WHERE id = $1', [id]);
+    const oldName = oldFamilyData.rows[0].name;
+
+    // Update the family tree name
+    const result = await pool.query(
+      'UPDATE family_trees SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [name.trim(), id]
+    );
+
+    // Log the name change
+    await pool.query(
+      `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
+      [id, userId, 'change_name', { oldName, newName: name.trim() }]
+    );
+
+    res.json({ family: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update family name' });
+  }
+});
+
 // Endpoint to generate new access code for family
 app.post('/api/family-tree/:id/regenerate-code', getUserId, async (req, res) => {
   const { id } = req.params;
@@ -515,6 +678,81 @@ app.post('/api/family-tree/:id/regenerate-code', getUserId, async (req, res) => 
     res.status(500).json({ error: 'Failed to regenerate access code' });
   }
 });
+// Endpoint to hide family tree for non-admin users (soft delete)
+app.post('/api/family-tree/:id/hide', getUserId, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+
+  try {
+    // Check if user is NOT an admin (only non-admins can hide)
+    const adminCheck = await pool.query(`
+      SELECT * FROM family_admins
+      WHERE family_id = $1 AND user_id = $2
+    `, [id, userId]);
+
+    if (adminCheck.rows.length > 0) {
+      return res.status(403).json({ error: 'Admins cannot hide family trees' });
+    }
+
+    // Add to hidden families table (create if doesn't exist)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS hidden_families (
+        id SERIAL PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id),
+        family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id, family_id)
+      );
+    `);
+
+    await pool.query(
+      'INSERT INTO hidden_families (user_id, family_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [userId, id]
+    );
+
+    res.json({ message: 'Family tree hidden successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to hide family tree' });
+  }
+});
+
+// Endpoint to delete family tree (admin only - hard delete)
+app.delete('/api/family-tree/:id', getUserId, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+
+  try {
+    // Check if current user is admin of this family
+    const adminCheck = await pool.query(`
+      SELECT * FROM family_admins
+      WHERE family_id = $1 AND user_id = $2
+    `, [id, userId]);
+
+    if (adminCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Only admins can delete family trees' });
+    }
+
+    // Get family name for logging
+    const familyData = await pool.query('SELECT name FROM family_trees WHERE id = $1', [id]);
+    const familyName = familyData.rows[0]?.name;
+
+    // Delete the family tree (cascade will handle related records)
+    await pool.query('DELETE FROM family_trees WHERE id = $1', [id]);
+
+    // Log the deletion
+    await pool.query(
+      `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
+      [id, userId, 'delete_family', { familyName }]
+    );
+
+    res.json({ message: 'Family tree deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete family tree' });
+  }
+});
+
 // Endpoint to undo an action based on log entry
 app.post('/api/family-tree/:id/undo/:logId', getUserId, async (req, res) => {
   const { id, logId } = req.params;

@@ -863,6 +863,371 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
   );
 };
 
+const EditNameModal = ({
+  isOpen,
+  onClose,
+  currentName,
+  onSave,
+  value,
+  onChange,
+}) => {
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave();
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(8px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        animation: "fadeIn 0.3s ease-out",
+      }}
+    >
+      <div
+        style={{
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          padding: "30px",
+          borderRadius: "16px",
+          width: "400px",
+          maxWidth: "90vw",
+          textAlign: "center",
+          boxShadow:
+            "0 25px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8)",
+          border: "1px solid rgba(0, 0, 0, 0.05)",
+          animation: "slideUp 0.4s ease-out",
+        }}
+      >
+        <h3
+          style={{
+            marginBottom: "20px",
+            color: "#1e293b",
+            fontSize: "24px",
+            fontWeight: "600",
+          }}
+        >
+          Edit Family Name
+        </h3>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "20px" }}>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Enter new family name"
+              required
+              autoFocus
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                border: "2px solid #e2e8f0",
+                borderRadius: "8px",
+                fontSize: "16px",
+                fontFamily: "inherit",
+                background: "rgba(255, 255, 255, 0.8)",
+                backdropFilter: "blur(10px)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#3b82f6";
+                e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.1)";
+                e.target.style.background = "rgba(255, 255, 255, 0.95)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#e2e8f0";
+                e.target.style.boxShadow = "none";
+                e.target.style.background = "rgba(255, 255, 255, 0.8)";
+              }}
+            />
+          </div>
+          <div
+            style={{ display: "flex", gap: "12px", justifyContent: "center" }}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "12px 24px",
+                background: "#f1f5f9",
+                color: "#64748b",
+                border: "1px solid #e2e8f0",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = "#e2e8f0";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = "#f1f5f9";
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: "12px 24px",
+                background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = "translateY(-1px)";
+                e.target.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = "translateY(0)";
+                e.target.style.boxShadow = "0 2px 8px rgba(59, 130, 246, 0.3)";
+              }}
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px) scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
+const DeleteConfirmModal = ({
+  isOpen,
+  onClose,
+  familyName,
+  confirmName,
+  onConfirmNameChange,
+  onConfirm,
+}) => {
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (confirmName === familyName) {
+      onConfirm();
+    } else {
+      alert(
+        "Family name doesn't match. Please type the exact family name to confirm deletion."
+      );
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(8px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        animation: "fadeIn 0.3s ease-out",
+      }}
+    >
+      <div
+        style={{
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          padding: "30px",
+          borderRadius: "16px",
+          width: "450px",
+          maxWidth: "90vw",
+          textAlign: "center",
+          boxShadow:
+            "0 25px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8)",
+          border: "1px solid rgba(0, 0, 0, 0.05)",
+          animation: "slideUp 0.4s ease-out",
+        }}
+      >
+        <div
+          style={{ color: "#dc2626", fontSize: "48px", marginBottom: "16px" }}
+        >
+          ⚠️
+        </div>
+        <h3
+          style={{
+            marginBottom: "16px",
+            color: "#dc2626",
+            fontSize: "24px",
+            fontWeight: "600",
+          }}
+        >
+          Delete Family Tree
+        </h3>
+        <p
+          style={{
+            marginBottom: "20px",
+            color: "#64748b",
+            lineHeight: "1.5",
+            fontSize: "14px",
+          }}
+        >
+          This action <strong>cannot be undone</strong>. This will permanently
+          delete the family tree "<strong>{familyName}</strong>" for{" "}
+          <strong>ALL users</strong>.
+        </p>
+        <p
+          style={{
+            marginBottom: "20px",
+            color: "#374151",
+            fontSize: "14px",
+            fontWeight: "500",
+          }}
+        >
+          Type "<strong>{familyName}</strong>" to confirm:
+        </p>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "24px" }}>
+            <input
+              type="text"
+              value={confirmName}
+              onChange={(e) => onConfirmNameChange(e.target.value)}
+              placeholder={`Type "${familyName}" here`}
+              required
+              autoFocus
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                border: "2px solid #e2e8f0",
+                borderRadius: "8px",
+                fontSize: "16px",
+                fontFamily: "inherit",
+                background: "rgba(255, 255, 255, 0.8)",
+                backdropFilter: "blur(10px)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#dc2626";
+                e.target.style.boxShadow = "0 0 0 3px rgba(220, 38, 38, 0.1)";
+                e.target.style.background = "rgba(255, 255, 255, 0.95)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#e2e8f0";
+                e.target.style.boxShadow = "none";
+                e.target.style.background = "rgba(255, 255, 255, 0.8)";
+              }}
+            />
+          </div>
+          <div
+            style={{ display: "flex", gap: "12px", justifyContent: "center" }}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "12px 24px",
+                background: "#f1f5f9",
+                color: "#64748b",
+                border: "1px solid #e2e8f0",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = "#e2e8f0";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = "#f1f5f9";
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: "12px 24px",
+                background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                boxShadow: "0 2px 8px rgba(220, 38, 38, 0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = "translateY(-1px)";
+                e.target.style.boxShadow = "0 4px 12px rgba(220, 38, 38, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = "translateY(0)";
+                e.target.style.boxShadow = "0 2px 8px rgba(220, 38, 38, 0.3)";
+              }}
+            >
+              Delete Forever
+            </button>
+          </div>
+        </form>
+      </div>
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px) scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
 const Flow = ({
   user,
   token,
@@ -891,6 +1256,13 @@ const Flow = ({
   const [showAdminDashboard, setShowAdminDashboard] = useState(true);
   const [showProfileDropdown, setShowProfileDropdown] =
     useState<boolean>(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [showMessagesPanel, setShowMessagesPanel] = useState<boolean>(false);
+  const [showEditNameModal, setShowEditNameModal] = useState<boolean>(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] =
+    useState<boolean>(false);
+  const [editNameValue, setEditNameValue] = useState<string>("");
+  const [deleteConfirmName, setDeleteConfirmName] = useState<string>("");
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -925,6 +1297,80 @@ const Flow = ({
     }
   }, [userId]);
 
+  // Load messages for logged-in users
+  const loadMessages = async () => {
+    if (!user || !token) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/messages`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const messagesData = await response.json();
+        setMessages(messagesData);
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error);
+    }
+  };
+
+  // Load messages when user logs in
+  useEffect(() => {
+    if (user && token) {
+      loadMessages();
+    }
+  }, [user, token]);
+
+  // Real-time sync for shared family trees
+  const checkForUpdates = async () => {
+    if (!user || !token || !currentFamilyId) return;
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/family-tree/${currentFamilyId}`,
+        {
+          headers: {
+            "X-User-ID": userId,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const freshFamilyData = await response.json();
+
+        // Check if data has changed
+        const currentData = { nodes, edges };
+        const serverData = freshFamilyData.data;
+
+        const dataChanged =
+          JSON.stringify(currentData) !== JSON.stringify(serverData);
+
+        if (dataChanged) {
+          // Update local data with server data
+          setNodes(addCallbacksToNodes(serverData.nodes));
+          setEdges(serverData.edges);
+
+          // Show notification
+          alert(
+            "Family tree has been updated by another member and synced automatically!"
+          );
+        }
+      }
+    } catch (error) {
+      console.warn("Could not check for updates:", error);
+    }
+  };
+
+  // Check for updates every 30 seconds when viewing a shared family tree
+  useEffect(() => {
+    if (user && currentFamilyId && !isAdmin) {
+      const interval = setInterval(checkForUpdates, 30000); // 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [user, currentFamilyId, isAdmin, nodes, edges]);
+
   // Persist current family tree to localStorage whenever it changes
   useEffect(() => {
     if (currentFamily && nodes.length > 0) {
@@ -955,7 +1401,31 @@ const Flow = ({
         throw new Error("Failed to load saved families");
       }
 
-      const families = await response.json();
+      let families = await response.json();
+
+      // Filter out hidden families for logged-in users
+      if (user && token) {
+        try {
+          const hiddenResponse = await fetch(
+            `${API_BASE_URL}/family-tree/hidden`,
+            {
+              headers,
+            }
+          );
+          if (hiddenResponse.ok) {
+            const hiddenFamilies = await hiddenResponse.json();
+            const hiddenIds = new Set(
+              hiddenFamilies.map((h: any) => h.family_id)
+            );
+            families = families.filter(
+              (family: any) => !hiddenIds.has(family.id)
+            );
+          }
+        } catch (error) {
+          console.warn("Could not load hidden families:", error);
+        }
+      }
+
       setSavedFamilies(families);
     } catch (error) {
       console.error("Error loading saved families:", error);
@@ -1189,6 +1659,137 @@ const Flow = ({
     alert(
       "Family tree saved locally for 24 hours. Sign up to save permanently across devices."
     );
+  };
+
+  // Function to handle soft delete (hide from user's view)
+  const handleSoftDelete = async () => {
+    try {
+      const headers: any = {
+        "Content-Type": "application/json",
+        "X-User-ID": userId,
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/family-tree/${currentFamilyId}/hide`,
+        {
+          method: "POST",
+          headers,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to hide family tree");
+      }
+
+      alert("Family tree removed from your view");
+
+      // Return to family menu
+      setCurrentFamily(null);
+      setCurrentFamilyId(null);
+      setNodes([]);
+      setEdges([]);
+      setIsAdmin(false);
+
+      // Reload families list
+      loadSavedFamilies();
+    } catch (error) {
+      console.error("Error hiding family tree:", error);
+      alert("Failed to hide family tree");
+    }
+  };
+
+  // Function to handle hard delete (admin only)
+  const handleHardDelete = async () => {
+    try {
+      const headers: any = {
+        "Content-Type": "application/json",
+        "X-User-ID": userId,
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/family-tree/${currentFamilyId}`,
+        {
+          method: "DELETE",
+          headers,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete family tree");
+      }
+
+      alert("Family tree deleted for everyone");
+
+      // Return to family menu
+      setCurrentFamily(null);
+      setCurrentFamilyId(null);
+      setNodes([]);
+      setEdges([]);
+      setIsAdmin(false);
+
+      // Reload families list
+      loadSavedFamilies();
+    } catch (error) {
+      console.error("Error deleting family tree:", error);
+      alert("Failed to delete family tree");
+    }
+  };
+
+  // Function to handle family name edit
+  const handleEditFamilyName = async () => {
+    if (!editNameValue.trim()) {
+      alert("Family name cannot be empty");
+      return;
+    }
+
+    if (editNameValue.trim() === currentFamily) {
+      setShowEditNameModal(false);
+      return;
+    }
+
+    try {
+      const headers: any = {
+        "Content-Type": "application/json",
+        "X-User-ID": userId,
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/family-tree/${currentFamilyId}/name`,
+        {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ name: editNameValue.trim() }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update family name");
+      }
+
+      // Update local state
+      setCurrentFamily(editNameValue.trim());
+      setShareableLink(
+        `${window.location.href}?family=${encodeURIComponent(
+          editNameValue.trim()
+        )}`
+      );
+
+      setShowEditNameModal(false);
+      alert("Family name updated successfully!");
+    } catch (error) {
+      console.error("Error updating family name:", error);
+      alert("Failed to update family name: " + error.message);
+    }
   };
   // Helper function to ensure all nodes have the required callbacks
   const addCallbacksToNodes = (nodeList) => {
@@ -1832,10 +2433,134 @@ const Flow = ({
 
   return (
     <div ref={reactFlowWrapper} className={`flow-container ${theme}`}>
+      {/* Messages Panel */}
+      {user && (
+        <Panel
+          position="top-right"
+          className="control-panel"
+          style={{ top: 10, right: 10, zIndex: 1000 }}
+        >
+          <div className="panel-section">
+            <button
+              className="control-btn"
+              onClick={() => setShowMessagesPanel(!showMessagesPanel)}
+              style={{
+                background: messages.length > 0 ? "#3b82f6" : "#6b7280",
+                position: "relative",
+              }}
+            >
+              📬 Messages
+              {messages.length > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-8px",
+                    right: "-8px",
+                    background: "#ef4444",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    fontSize: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {messages.length}
+                </span>
+              )}
+            </button>
+            {showMessagesPanel && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  background: "rgba(255, 255, 255, 0.95)",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                  backdropFilter: "blur(10px)",
+                  minWidth: "300px",
+                  maxWidth: "400px",
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                  zIndex: 1001,
+                  marginTop: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "16px",
+                    borderBottom: "1px solid #e2e8f0",
+                    fontWeight: "600",
+                    color: "#1e293b",
+                  }}
+                >
+                  Notifications
+                </div>
+                <div style={{ padding: "8px" }}>
+                  {messages.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "16px",
+                        textAlign: "center",
+                        color: "#64748b",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      No new notifications
+                    </div>
+                  ) : (
+                    messages.map((message: any) => (
+                      <div
+                        key={message.id}
+                        style={{
+                          padding: "12px",
+                          borderBottom: "1px solid #f1f5f9",
+                          background: "rgba(255, 255, 255, 0.8)",
+                          borderRadius: "6px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            color: "#1e293b",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          {message.message}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#64748b",
+                          }}
+                        >
+                          {new Date(message.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Panel>
+      )}
+
       {/* Auth Panel - Top Right */}
       <div
         className="auth-panel"
-        style={{ position: "fixed", top: "20px", right: "20px", zIndex: 1000 }}
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: user ? "120px" : "20px",
+          zIndex: 1000,
+        }}
       >
         {user ? (
           <div className="profile-section">
@@ -1876,6 +2601,37 @@ const Flow = ({
           onClose={() => {
             setShowAuthModal(false);
             // Note: saveLocallyWithExpiration will be called from Flow component
+          }}
+        />
+      )}
+
+      {/* Edit Name Modal */}
+      {showEditNameModal && (
+        <EditNameModal
+          isOpen={showEditNameModal}
+          onClose={() => setShowEditNameModal(false)}
+          currentName={currentFamily || ""}
+          onSave={handleEditFamilyName}
+          value={editNameValue}
+          onChange={setEditNameValue}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmModal && (
+        <DeleteConfirmModal
+          isOpen={showDeleteConfirmModal}
+          onClose={() => {
+            setShowDeleteConfirmModal(false);
+            setDeleteConfirmName("");
+          }}
+          familyName={currentFamily || ""}
+          confirmName={deleteConfirmName}
+          onConfirmNameChange={setDeleteConfirmName}
+          onConfirm={() => {
+            handleHardDelete();
+            setShowDeleteConfirmModal(false);
+            setDeleteConfirmName("");
           }}
         />
       )}
@@ -1926,18 +2682,74 @@ const Flow = ({
         {/* Family Info */}
         <Panel position="bottom-left" className="control-panel">
           <div className="panel-section">
-            {!currentFamilyId && (
-              <input
-                type="text"
-                value={currentFamily || ""}
-                onChange={(e) => setCurrentFamily(e.target.value)}
-                className="family-name-input"
-                placeholder="Family name"
-              />
-            )}
+            <div
+              style={{
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  color: "#1e293b",
+                }}
+              >
+                {currentFamily || "Unnamed Family"}
+              </span>
+              {isAdmin && currentFamilyId && (
+                <button
+                  onClick={() => {
+                    setEditNameValue(currentFamily || "");
+                    setShowEditNameModal(true);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "4px",
+                    borderRadius: "4px",
+                    color: "#64748b",
+                    fontSize: "16px",
+                    transition: "color 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.target.style.color = "#3b82f6")}
+                  onMouseLeave={(e) => (e.target.style.color = "#64748b")}
+                  title="Edit family name"
+                >
+                  ✏️
+                </button>
+              )}
+            </div>
             <button className="control-btn" onClick={copyShareableLink}>
               🔗 Copy Link
             </button>
+            {currentFamilyId && (
+              <button
+                className="control-btn"
+                onClick={() => {
+                  if (!user) {
+                    alert("Please log in to delete family trees");
+                    return;
+                  }
+
+                  if (isAdmin) {
+                    setDeleteConfirmName("");
+                    setShowDeleteConfirmModal(true);
+                  } else {
+                    // Non-admin soft delete
+                    const confirmMessage = `Are you sure you want to remove "${currentFamily}" from your view? It will still be available to other members.`;
+                    if (!confirm(confirmMessage)) return;
+
+                    handleSoftDelete();
+                  }
+                }}
+              >
+                🗑️ {isAdmin ? "Delete for All" : "Remove from My View"}
+              </button>
+            )}
             <button
               className="control-btn"
               onClick={() => setCurrentFamily(null)}
