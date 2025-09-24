@@ -2210,31 +2210,50 @@ const Flow = ({
       const minHeight = 600;
       const maxWidth = 4000; // 4K width limit
       const maxHeight = 4000; // 4K height limit
-      // Base dimensions on content with generous padding
-      let imageWidth = Math.max(
-        minWidth,
-        Math.min(maxWidth, nodesBounds.width + padding * 2)
-      );
-      let imageHeight = Math.max(
-        minHeight,
-        Math.min(maxHeight, nodesBounds.height + padding * 2)
-      );
 
-      // For very wide trees, use wider aspect ratio
-      if (nodesBounds.width > nodesBounds.height * 2) {
-        imageWidth = Math.min(maxWidth, nodesBounds.width + padding * 2);
-        imageHeight = Math.max(minHeight, imageWidth * 0.6); // 5:3 aspect ratio
-      }
-      // For very tall trees, use taller aspect ratio
-      else if (nodesBounds.height > nodesBounds.width * 2) {
-        imageHeight = Math.min(maxHeight, nodesBounds.height + padding * 2);
-        imageWidth = Math.max(minWidth, imageHeight * 0.6); // 3:5 aspect ratio
+      // For small families, use content-based dimensions to ensure all nodes fit
+      const contentWidth = nodesBounds.width + padding * 2;
+      const contentHeight = nodesBounds.height + padding * 2;
+      const isSmallFamily =
+        contentWidth <= minWidth && contentHeight <= minHeight;
+
+      let imageWidth, imageHeight;
+
+      if (isSmallFamily) {
+        // Small family - use dimensions based on content with extra padding for bottom node
+        imageWidth = Math.max(contentWidth, 400); // minimum 400px
+        imageHeight = Math.max(contentHeight + 50, 300); // minimum 300px, extra 50px for bottom node
+      } else {
+        // Large family - use standard dimension calculation
+        imageWidth = Math.max(
+          minWidth,
+          Math.min(maxWidth, nodesBounds.width + padding * 2)
+        );
+        imageHeight = Math.max(
+          minHeight,
+          Math.min(maxHeight, nodesBounds.height + padding * 2)
+        );
+
+        // For very wide trees, use wider aspect ratio
+        if (nodesBounds.width > nodesBounds.height * 2) {
+          imageWidth = Math.min(maxWidth, nodesBounds.width + padding * 2);
+          imageHeight = Math.max(minHeight, imageWidth * 0.6); // 5:3 aspect ratio
+        }
+        // For very tall trees, use taller aspect ratio
+        else if (nodesBounds.height > nodesBounds.width * 2) {
+          imageHeight = Math.min(maxHeight, nodesBounds.height + padding * 2);
+          imageWidth = Math.max(minWidth, imageHeight * 0.6); // 3:5 aspect ratio
+        }
       }
 
       console.log(
         `Exporting ${nodes.length} nodes with dimensions: ${imageWidth}x${imageHeight}`
       );
-      console.log(`Content bounds: ${nodesBounds.width}x${nodesBounds.height}`);
+      console.log(
+        `Content bounds: ${nodesBounds.width}x${nodesBounds.height}, isSmallFamily: ${isSmallFamily}`
+      );
+
+      // Use standard centering for all cases - it should work now with proper dimensions
       const viewport = getViewportForBounds(
         nodesBounds,
         imageWidth,

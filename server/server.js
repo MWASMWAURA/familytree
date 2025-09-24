@@ -105,6 +105,14 @@ const initDb = async () => {
     );
   `);
 
+  // Ensure updated_at column exists (in case table was created without it)
+  try {
+    await pool.query(`ALTER TABLE family_trees ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`);
+    console.log('Ensured updated_at column exists');
+  } catch (err) {
+    console.log('updated_at column already exists or could not be added:', err.message);
+  }
+
   // Family admins table (for multiple admins per family)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS family_admins (
@@ -389,7 +397,7 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
     // Log the name change
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [familyId, userId, 'change_name', JSON.stringify({ oldName, newName: name.trim() })]
+      [familyId, userId, 'change_name', JSON.stringify({})]
     );
 
     res.json({ family: result.rows[0] });
@@ -512,7 +520,7 @@ app.put('/api/family-tree/:id', getUserId, async (req, res) => {
 
     // Update the family tree
     const result = await pool.query(
-      'UPDATE family_trees SET data = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      'UPDATE family_trees SET data = $1 WHERE id = $2 RETURNING *',
       [data, id]
     );
 
