@@ -83,6 +83,15 @@ const initDb = async () => {
     );
   `);
 
+  // Ensure all required columns exist (in case table was created without them)
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`);
+  } catch (err) {
+    console.log('Columns already exist or could not be added:', err.message);
+  }
+
   // Family trees table with admin support
   await pool.query(`
     CREATE TABLE IF NOT EXISTS family_trees (
@@ -117,6 +126,17 @@ const initDb = async () => {
       action TEXT NOT NULL,
       details JSONB,
       created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  // Hidden families table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS hidden_families (
+      id SERIAL PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(id),
+      family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, family_id)
     );
   `);
 
@@ -171,7 +191,7 @@ app.post('/api/auth/signup', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, guestUserId } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -188,6 +208,34 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // If guest user ID is provided, transfer ownership of family trees
+    if (guestUserId) {
+      try {
+        // Transfer admin rights from guest user to logged-in user
+        await pool.query(
+          'UPDATE family_trees SET admin_id = $1 WHERE admin_id = $2',
+          [user.id, guestUserId]
+        );
+
+        // Transfer admin entries in family_admins table
+        await pool.query(
+          'UPDATE family_admins SET user_id = $1 WHERE user_id = $2',
+          [user.id, guestUserId]
+        );
+
+        // Update activity logs
+        await pool.query(
+          'UPDATE activity_logs SET user_id = $1 WHERE user_id = $2',
+          [user.id, guestUserId]
+        );
+
+        console.log(`Transferred ownership from guest ${guestUserId} to user ${user.id}`);
+      } catch (transferErr) {
+        console.error('Error transferring ownership:', transferErr);
+        // Don't fail login if transfer fails
+      }
     }
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -341,7 +389,7 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
     // Log the name change
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [familyId, userId, 'change_name', { oldName, newName: name.trim() }]
+      [familyId, userId, 'change_name', JSON.stringify({ oldName, newName: name.trim() })]
     );
 
     res.json({ family: result.rows[0] });
@@ -365,8 +413,8 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
         al.created_at,
         ft.name as family_name,
         CASE
-          WHEN al.action = 'change_name' THEN 'Family name changed from "' || al.details->>'oldName' || '" to "' || al.details->>'newName' || '"'
-          WHEN al.action = 'delete_family' THEN 'Family "' || al.details->>'familyName' || '" was deleted by admin'
+          WHEN al.action = 'change_name' THEN 'Family name was changed'
+          WHEN al.action = 'delete_family' THEN 'A family was deleted by admin'
           WHEN al.action = 'regenerate_code' THEN 'Access code for "' || ft.name || '" was changed'
           ELSE al.action
         END as message
@@ -411,7 +459,7 @@ app.post('/api/family-tree/access', getUserId, async (req, res) => {
     // Log the access
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [family.id, userId, 'access', { familyName, accessCode }]
+      [family.id, userId, 'access', JSON.stringify({ familyName, accessCode })]
     );
 
     res.json({ family, isAdmin: family.admin_id === userId });
@@ -421,7 +469,7 @@ app.post('/api/family-tree/access', getUserId, async (req, res) => {
   }
 });
 
-// Endpoint to update family tree (with activity logging)
+// Endpoint to update family tree (allows all users with access)
 app.put('/api/family-tree/:id', getUserId, async (req, res) => {
   const { id } = req.params;
   const { data } = req.body;
@@ -432,7 +480,7 @@ app.put('/api/family-tree/:id', getUserId, async (req, res) => {
   }
 
   try {
-    // Check if user has access to this family (is admin or creator)
+    // Check if user has access to this family (is admin, creator, or has access via code)
     const accessCheck = await pool.query(`
       SELECT ft.*, fa.user_id as admin_user_id
       FROM family_trees ft
@@ -441,14 +489,18 @@ app.put('/api/family-tree/:id', getUserId, async (req, res) => {
     `, [userId, id]);
 
     if (accessCheck.rows.length === 0) {
-      return res.status(403).json({ error: 'Family not found' });
+      return res.status(403).json({ error: 'Family not found or access denied' });
     }
 
     const family = accessCheck.rows[0];
     const isAdmin = family.admin_user_id !== null || family.admin_id === userId;
 
+    // Allow update if user is admin OR if they have access to the family
+    // (admins can always update, members can update their shared family trees)
     if (!isAdmin) {
-      return res.status(403).json({ error: 'Access denied - not an admin' });
+      // For non-admins, check if they have access (this allows collaborative editing)
+      // Since they got past the accessCheck, they have some level of access
+      // We'll allow the update but log it differently
     }
 
     // Get current data before update for logging
@@ -460,14 +512,14 @@ app.put('/api/family-tree/:id', getUserId, async (req, res) => {
 
     // Update the family tree
     const result = await pool.query(
-      'UPDATE family_trees SET data = $1 WHERE id = $2 RETURNING *',
+      'UPDATE family_trees SET data = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
       [data, id]
     );
 
     // Log the update activity with old and new data
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'update', { oldData, newData: data }]
+      [id, userId, isAdmin ? 'admin_update' : 'member_update', JSON.stringify({ oldData, newData: data })]
     );
 
     res.json(result.rows[0]);
@@ -507,7 +559,7 @@ app.post('/api/family-tree/:id/admin', getUserId, async (req, res) => {
     // Log the admin addition
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'add_admin', { newAdminId }]
+      [id, userId, 'add_admin', JSON.stringify({ newAdminId })]
     );
 
     res.json({ message: 'Admin added successfully' });
@@ -616,7 +668,7 @@ app.post('/api/family-tree/:id/regenerate-code', getUserId, async (req, res) => 
     // Log the code regeneration
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'regenerate_code', { oldCode: result.rows[0].access_code, newCode }]
+      [id, userId, 'regenerate_code', JSON.stringify({ oldCode: result.rows[0].access_code, newCode })]
     );
 
     res.json({ accessCode: newCode });
@@ -690,7 +742,7 @@ app.delete('/api/family-tree/:id', getUserId, async (req, res) => {
     // Log the deletion
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'delete_family', { familyName }]
+      [id, userId, 'delete_family', JSON.stringify({ familyName })]
     );
 
     res.json({ message: 'Family tree deleted successfully' });

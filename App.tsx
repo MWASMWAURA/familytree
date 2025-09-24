@@ -528,7 +528,6 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -547,7 +546,6 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
   React.useEffect(() => {
     if (mode === "login") {
       setConfirmPassword("");
-      setShowConfirmPassword(false);
     }
   }, [mode]);
 
@@ -685,16 +683,16 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
             </button>
           </div>
           {mode === "signup" && (
-            <div style={{ marginBottom: "24px", position: "relative" }}>
+            <div style={{ marginBottom: "24px" }}>
               <input
-                type={showConfirmPassword ? "text" : "password"}
+                type="password"
                 placeholder="Confirm Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 style={{
                   width: "100%",
-                  padding: "14px 50px 14px 18px",
+                  padding: "14px 18px",
                   border: "2px solid #e2e8f0",
                   borderRadius: "12px",
                   fontSize: "16px",
@@ -719,28 +717,6 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
                   e.target.style.transform = "translateY(0)";
                 }}
               />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{
-                  position: "absolute",
-                  right: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#64748b",
-                  fontSize: "18px",
-                  padding: "4px",
-                  borderRadius: "4px",
-                  transition: "color 0.2s ease",
-                }}
-                onMouseEnter={(e) => (e.target.style.color = "#3b82f6")}
-                onMouseLeave={(e) => (e.target.style.color = "#64748b")}
-              >
-                {showConfirmPassword ? "🙈" : "👁️"}
-              </button>
             </div>
           )}
           <button
@@ -2431,162 +2407,6 @@ const Flow = ({
 
   return (
     <div ref={reactFlowWrapper} className={`flow-container ${theme}`}>
-      {/* Messages Panel */}
-      {user && (
-        <Panel
-          position="top-right"
-          className="control-panel"
-          style={{ top: 10, right: 10, zIndex: 1000 }}
-        >
-          <div className="panel-section">
-            <button
-              className="control-btn"
-              onClick={() => setShowMessagesPanel(!showMessagesPanel)}
-              style={{
-                background: messages.length > 0 ? "#3b82f6" : "#6b7280",
-                position: "relative",
-              }}
-            >
-              📬 Messages
-              {messages.length > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "-8px",
-                    right: "-8px",
-                    background: "#ef4444",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "20px",
-                    height: "20px",
-                    fontSize: "12px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {messages.length}
-                </span>
-              )}
-            </button>
-            {showMessagesPanel && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  right: 0,
-                  background: "rgba(255, 255, 255, 0.95)",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                  backdropFilter: "blur(10px)",
-                  minWidth: "300px",
-                  maxWidth: "400px",
-                  maxHeight: "400px",
-                  overflowY: "auto",
-                  zIndex: 1001,
-                  marginTop: "8px",
-                }}
-              >
-                <div
-                  style={{
-                    padding: "16px",
-                    borderBottom: "1px solid #e2e8f0",
-                    fontWeight: "600",
-                    color: "#1e293b",
-                  }}
-                >
-                  Notifications
-                </div>
-                <div style={{ padding: "8px" }}>
-                  {messages.length === 0 ? (
-                    <div
-                      style={{
-                        padding: "16px",
-                        textAlign: "center",
-                        color: "#64748b",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      No new notifications
-                    </div>
-                  ) : (
-                    messages.map((message: any) => (
-                      <div
-                        key={message.id}
-                        style={{
-                          padding: "12px",
-                          borderBottom: "1px solid #f1f5f9",
-                          background: "rgba(255, 255, 255, 0.8)",
-                          borderRadius: "6px",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "14px",
-                            color: "#1e293b",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          {message.message}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#64748b",
-                          }}
-                        >
-                          {new Date(message.created_at).toLocaleString()}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </Panel>
-      )}
-
-      {/* Auth Panel - Top Right */}
-      <div
-        className="auth-panel"
-        style={{
-          position: "fixed",
-          top: "20px",
-          right: user ? "120px" : "20px",
-          zIndex: 1000,
-        }}
-      >
-        {user ? (
-          <div className="profile-section">
-            <button
-              className="profile-btn"
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-            >
-              👤 {user.email}
-            </button>
-            {showProfileDropdown && (
-              <div className="profile-dropdown">
-                <button onClick={onLogout}>Logout</button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <button
-            className="auth-btn"
-            onClick={() => {
-              setAuthMode("login");
-              setShowAuthModal(true);
-            }}
-          >
-            Login / Sign Up
-          </button>
-        )}
-      </div>
-
       {/* Auth Modal */}
       {showAuthModal && (
         <AuthModal
@@ -2674,6 +2494,124 @@ const Flow = ({
             <button className="control-btn" onClick={() => fitView()}>
               📐 Fit View
             </button>
+            {user && (
+              <>
+                <hr
+                  style={{
+                    margin: "8px 0",
+                    border: "none",
+                    borderTop: "1px solid #e2e8f0",
+                  }}
+                />
+                <button
+                  className="control-btn"
+                  onClick={() => setShowMessagesPanel(!showMessagesPanel)}
+                  style={{
+                    background: messages.length > 0 ? "#3b82f6" : "#6b7280",
+                    position: "relative",
+                  }}
+                >
+                  📬 Messages
+                  {messages.length > 0 && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "-8px",
+                        right: "-8px",
+                        background: "#ef4444",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: "20px",
+                        height: "20px",
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {messages.length}
+                    </span>
+                  )}
+                </button>
+                {showMessagesPanel && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      right: 0,
+                      background: "rgba(255, 255, 255, 0.95)",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                      backdropFilter: "blur(10px)",
+                      minWidth: "300px",
+                      maxWidth: "400px",
+                      maxHeight: "400px",
+                      overflowY: "auto",
+                      zIndex: 1001,
+                      marginTop: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "16px",
+                        borderBottom: "1px solid #e2e8f0",
+                        fontWeight: "600",
+                        color: "#1e293b",
+                      }}
+                    >
+                      Notifications
+                    </div>
+                    <div style={{ padding: "8px" }}>
+                      {messages.length === 0 ? (
+                        <div
+                          style={{
+                            padding: "16px",
+                            textAlign: "center",
+                            color: "#64748b",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          No new notifications
+                        </div>
+                      ) : (
+                        messages.map((message: any) => (
+                          <div
+                            key={message.id}
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid #f1f5f9",
+                              background: "rgba(255, 255, 255, 0.8)",
+                              borderRadius: "6px",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "14px",
+                                color: "#1e293b",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              {message.message}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "#64748b",
+                              }}
+                            >
+                              {new Date(message.created_at).toLocaleString()}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </Panel>
 
@@ -2834,10 +2772,13 @@ export function App() {
   // Auth functions
   const login = async (email: string, password: string) => {
     try {
+      // Get current guest user ID to transfer ownership
+      const guestUserId = localStorage.getItem("userId");
+
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, guestUserId }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -2845,8 +2786,11 @@ export function App() {
         setToken(data.token);
         localStorage.setItem("authToken", data.token);
         localStorage.setItem("authUser", JSON.stringify(data.user));
+        // Update userId to the logged-in user's ID so families are loaded correctly
+        localStorage.setItem("userId", data.user.id);
         setShowAuthModal(false);
-        // Reload families after login - this will be handled by Flow component
+        // Force reload to update userId state
+        window.location.reload();
       } else {
         alert(data.error || "Login failed");
       }
