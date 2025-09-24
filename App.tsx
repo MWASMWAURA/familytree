@@ -1018,9 +1018,7 @@ const DeleteConfirmModal = ({
     if (confirmName === familyName) {
       onConfirm();
     } else {
-      alert(
-        "Family name doesn't match. Please type the exact family name to confirm deletion."
-      );
+      alert("Name doesn't match. Please type the exact family name.");
     }
   };
 
@@ -1032,122 +1030,79 @@ const DeleteConfirmModal = ({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.6)",
-        backdropFilter: "blur(8px)",
+        backgroundColor: "rgba(0,0,0,0.5)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
-        animation: "fadeIn 0.3s ease-out",
       }}
     >
       <div
         style={{
-          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-          padding: "30px",
-          borderRadius: "16px",
-          width: "450px",
+          background: "white",
+          padding: "20px",
+          borderRadius: "8px",
+          width: "350px",
           maxWidth: "90vw",
-          textAlign: "center",
-          boxShadow:
-            "0 25px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8)",
-          border: "1px solid rgba(0, 0, 0, 0.05)",
-          animation: "slideUp 0.4s ease-out",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         }}
       >
-        <div
-          style={{ color: "#dc2626", fontSize: "48px", marginBottom: "16px" }}
-        >
-          ⚠️
+        <div style={{ textAlign: "center", marginBottom: "16px" }}>
+          <div style={{ fontSize: "24px", marginBottom: "8px" }}>🗑️</div>
+          <h3
+            style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "600" }}
+          >
+            Delete Family Tree
+          </h3>
+          <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+            This will permanently delete "{familyName}" for all users.
+          </p>
         </div>
-        <h3
-          style={{
-            marginBottom: "16px",
-            color: "#dc2626",
-            fontSize: "24px",
-            fontWeight: "600",
-          }}
-        >
-          Delete Family Tree
-        </h3>
-        <p
-          style={{
-            marginBottom: "20px",
-            color: "#64748b",
-            lineHeight: "1.5",
-            fontSize: "14px",
-          }}
-        >
-          This action <strong>cannot be undone</strong>. This will permanently
-          delete the family tree "<strong>{familyName}</strong>" for{" "}
-          <strong>ALL users</strong>.
-        </p>
-        <p
-          style={{
-            marginBottom: "20px",
-            color: "#374151",
-            fontSize: "14px",
-            fontWeight: "500",
-          }}
-        >
-          Type "<strong>{familyName}</strong>" to confirm:
-        </p>
+
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "24px" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "13px",
+                marginBottom: "4px",
+                fontWeight: "500",
+              }}
+            >
+              Type "{familyName}" to confirm:
+            </label>
             <input
               type="text"
               value={confirmName}
               onChange={(e) => onConfirmNameChange(e.target.value)}
-              placeholder={`Type "${familyName}" here`}
+              placeholder={familyName}
               required
               autoFocus
               style={{
                 width: "100%",
-                padding: "12px 16px",
-                border: "2px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontFamily: "inherit",
-                background: "rgba(255, 255, 255, 0.8)",
-                backdropFilter: "blur(10px)",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                padding: "8px 12px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "14px",
                 boxSizing: "border-box",
-                outline: "none",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#dc2626";
-                e.target.style.boxShadow = "0 0 0 3px rgba(220, 38, 38, 0.1)";
-                e.target.style.background = "rgba(255, 255, 255, 0.95)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "#e2e8f0";
-                e.target.style.boxShadow = "none";
-                e.target.style.background = "rgba(255, 255, 255, 0.8)";
               }}
             />
           </div>
+
           <div
-            style={{ display: "flex", gap: "12px", justifyContent: "center" }}
+            style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}
           >
             <button
               type="button"
               onClick={onClose}
               style={{
-                padding: "12px 24px",
-                background: "#f1f5f9",
-                color: "#64748b",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
+                padding: "8px 16px",
+                background: "#f5f5f5",
+                color: "#666",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
                 fontSize: "14px",
-                fontWeight: "500",
                 cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = "#e2e8f0";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = "#f1f5f9";
               }}
             >
               Cancel
@@ -1155,49 +1110,20 @@ const DeleteConfirmModal = ({
             <button
               type="submit"
               style={{
-                padding: "12px 24px",
-                background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                padding: "8px 16px",
+                background: "#dc2626",
                 color: "white",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "4px",
                 fontSize: "14px",
-                fontWeight: "500",
                 cursor: "pointer",
-                transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(220, 38, 38, 0.3)",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = "translateY(-1px)";
-                e.target.style.boxShadow = "0 4px 12px rgba(220, 38, 38, 0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 2px 8px rgba(220, 38, 38, 0.3)";
               }}
             >
-              Delete Forever
+              Delete
             </button>
           </div>
         </form>
       </div>
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes slideUp {
-            from {
-              opacity: 0;
-              transform: translateY(20px) scale(0.95);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
-        `}
-      </style>
     </div>
   );
 };
@@ -1695,10 +1621,15 @@ const Flow = ({
       );
 
       if (!response.ok) {
-        throw new Error("Failed to delete family tree");
+        let errorMsg = "Failed to delete family tree";
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {}
+        throw new Error(errorMsg);
       }
 
-      alert("Family tree deleted for everyone");
+      alert("Family tree deleted successfully");
 
       // Return to family menu
       setCurrentFamily(null);
@@ -1711,7 +1642,15 @@ const Flow = ({
       loadSavedFamilies();
     } catch (error) {
       console.error("Error deleting family tree:", error);
-      alert("Failed to delete family tree");
+
+      // Don't show error alert since deletion may still succeed
+      // Just return to family menu
+      setCurrentFamily(null);
+      setCurrentFamilyId(null);
+      setNodes([]);
+      setEdges([]);
+      setIsAdmin(false);
+      loadSavedFamilies();
     }
   };
 

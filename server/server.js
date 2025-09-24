@@ -739,15 +739,20 @@ app.delete('/api/family-tree/:id', getUserId, async (req, res) => {
     // Delete the family tree (cascade will handle related records)
     await pool.query('DELETE FROM family_trees WHERE id = $1', [id]);
 
-    // Log the deletion
-    await pool.query(
-      `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'delete_family', JSON.stringify({ familyName })]
-    );
+    // Log the deletion AFTER deleting (but don't fail if logging fails)
+    try {
+      await pool.query(
+        `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
+        [id, userId, 'delete_family', JSON.stringify({ familyName })]
+      );
+    } catch (logErr) {
+      console.warn('Failed to log deletion activity:', logErr.message);
+      // Don't fail the deletion if logging fails
+    }
 
     res.json({ message: 'Family tree deleted successfully' });
   } catch (err) {
-    console.error(err);
+    console.error('Error deleting family tree:', err);
     res.status(500).json({ error: 'Failed to delete family tree' });
   }
 });
