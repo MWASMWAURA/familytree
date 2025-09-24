@@ -97,8 +97,8 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
   // Configure Dagre for better family tree layout
   layoutGraph.setGraph({
     rankdir: direction,
-    nodesep: isHorizontal ? 180 : 180, // Increased space between nodes at same level
-    ranksep: isHorizontal ? 210 : 210, // Increased space between generations
+    nodesep: isHorizontal ? 250 : 180, // More space between nodes at same level for horizontal
+    ranksep: isHorizontal ? 300 : 210, // More space between generations for horizontal
     marginx: 150, // Increased margin to avoid overlap
     marginy: 150, // Increased margin to avoid overlap
     align: "UL",
@@ -166,9 +166,9 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
 
       if (partnerPosition) {
         if (isHorizontal) {
-          // Horizontal layout: place spouse below partner
+          // Horizontal layout: place spouse below partner with more spacing
           adjustedX = partnerPosition.x - nodeWidth / 2;
-          adjustedY = partnerPosition.y + nodeHeight + 18; // More space below partner
+          adjustedY = partnerPosition.y + nodeHeight + 40; // More space below partner for horizontal
         } else {
           // Vertical layout: place spouse to the right of partner
           adjustedX = partnerPosition.x + nodeWidth + 18; // More space to the right of partner
