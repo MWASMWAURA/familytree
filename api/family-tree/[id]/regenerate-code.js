@@ -78,7 +78,7 @@ export default async function handler(req, res) {
 
     // Update the family tree with new access code
     const result = await pool.query(
-      'UPDATE family_trees SET access_code = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      'UPDATE family_trees SET access_code = $1 WHERE id = $2 RETURNING *',
       [newCode, id]
     );
 

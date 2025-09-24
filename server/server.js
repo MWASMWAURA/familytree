@@ -1,6 +1,5 @@
 const express = require('express');
 const { Pool } = require('pg');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -17,7 +16,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(bodyParser.json());
+app.use(express.json());
 
 const crypto = require('crypto');
 const { generateToken, validateAccessToken } = require('./token-feature');
@@ -130,6 +129,8 @@ const initDb = async () => {
 
 initDb().then(() => {
   console.log('Database initialized.');
+}).catch(err => {
+  console.error('Database initialization failed:', err);
 });
 
 // Auth endpoints
@@ -298,10 +299,9 @@ app.get('/api/family-tree/hidden', authenticateToken, async (req, res) => {
 // Endpoint to update family tree name (admin only)
 app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
   const { id } = req.params;
+  const familyId = parseInt(id, 10);
   const { name } = req.body;
   const userId = req.userId;
-
-  console.log('Update family name request:', { id, name, userId, body: req.body });
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Name is required' });
@@ -312,7 +312,7 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
     const adminCheck = await pool.query(`
       SELECT * FROM family_admins
       WHERE family_id = $1 AND user_id = $2
-    `, [id, userId]);
+    `, [familyId, userId]);
 
     if (adminCheck.rows.length === 0) {
       return res.status(403).json({ error: 'Only admins can change family name' });
@@ -321,7 +321,7 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
     // Check if new name already exists
     const existingFamily = await pool.query(
       'SELECT * FROM family_trees WHERE LOWER(name) = LOWER($1) AND id != $2',
-      [name.trim(), id]
+      [name.trim(), familyId]
     );
 
     if (existingFamily.rows.length > 0) {
@@ -329,25 +329,25 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
     }
 
     // Get current name for logging
-    const currentFamily = await pool.query('SELECT name FROM family_trees WHERE id = $1', [id]);
+    const currentFamily = await pool.query('SELECT name FROM family_trees WHERE id = $1', [familyId]);
     const oldName = currentFamily.rows[0].name;
 
     // Update the family name
     const result = await pool.query(
-      'UPDATE family_trees SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-      [name.trim(), id]
+      'UPDATE family_trees SET name = $1 WHERE id = $2 RETURNING *',
+      [name.trim(), familyId]
     );
 
     // Log the name change
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'change_name', { oldName, newName: name.trim() }]
+      [familyId, userId, 'change_name', { oldName, newName: name.trim() }]
     );
 
     res.json({ family: result.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to update family name' });
+    res.status(500).json({ error: 'Database error occurred while updating family name' });
   }
 });
 
@@ -587,59 +587,6 @@ app.get('/api/family-tree/:id/logs', getUserId, async (req, res) => {
   }
 });
 
-// Endpoint to update family name (admin only)
-app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  const userId = req.userId;
-
-  if (!name || !name.trim()) {
-    return res.status(400).json({ error: 'Family name is required' });
-  }
-
-  try {
-    // Check if current user is admin of this family
-    const adminCheck = await pool.query(`
-      SELECT * FROM family_admins
-      WHERE family_id = $1 AND user_id = $2
-    `, [id, userId]);
-
-    if (adminCheck.rows.length === 0) {
-      return res.status(403).json({ error: 'Only admins can change family name' });
-    }
-
-    // Check if new name already exists
-    const existingFamily = await pool.query(
-      'SELECT * FROM family_trees WHERE LOWER(name) = LOWER($1) AND id != $2',
-      [name.trim(), id]
-    );
-
-    if (existingFamily.rows.length > 0) {
-      return res.status(409).json({ error: 'Family name already exists' });
-    }
-
-    // Get old name for logging
-    const oldFamilyData = await pool.query('SELECT name FROM family_trees WHERE id = $1', [id]);
-    const oldName = oldFamilyData.rows[0].name;
-
-    // Update the family tree name
-    const result = await pool.query(
-      'UPDATE family_trees SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-      [name.trim(), id]
-    );
-
-    // Log the name change
-    await pool.query(
-      `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'change_name', { oldName, newName: name.trim() }]
-    );
-
-    res.json({ family: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update family name' });
-  }
-});
 
 // Endpoint to generate new access code for family
 app.post('/api/family-tree/:id/regenerate-code', getUserId, async (req, res) => {
@@ -662,7 +609,7 @@ app.post('/api/family-tree/:id/regenerate-code', getUserId, async (req, res) => 
 
     // Update the family tree with new access code
     const result = await pool.query(
-      'UPDATE family_trees SET access_code = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      'UPDATE family_trees SET access_code = $1 WHERE id = $2 RETURNING *',
       [newCode, id]
     );
 
@@ -786,6 +733,11 @@ app.post('/api/family-tree/:id/undo/:logId', getUserId, async (req, res) => {
 });
 
 
+
+// Test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Server is running' });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
