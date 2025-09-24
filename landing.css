@@ -44,6 +44,95 @@ html, body {
   left: 0;
 }
 
+/* Auth Panel - Top Right */
+.auth-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e3a8a;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.auth-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e3a8a;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.profile-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  min-width: 120px;
+  z-index: 100;
+}
+
+.profile-dropdown button {
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #1e3a8a;
+  transition: background-color 0.2s ease;
+}
+
+.profile-dropdown button:hover {
+  background: rgba(30, 58, 138, 0.1);
+}
+
 /* Left Content Panel */
 .content-panel {
   flex: 1;
@@ -505,6 +594,17 @@ html, body {
 
 /* Mobile Layout - Stack vertically */
 @media (max-width: 768px) {
+  .auth-panel {
+    top: 15px;
+    right: 15px;
+  }
+
+  .auth-btn,
+  .profile-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
   .container {
     flex-direction: column;
     height: auto;

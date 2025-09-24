@@ -313,12 +313,18 @@ const FamilySelector = ({
   onCreateNew,
   savedFamilies,
   onAccessWithCode,
+  user,
+  onLogin,
+  onSignup,
+  onLogout,
+  onShowAuthModal,
 }) => {
   const [newFamilyName, setNewFamilyName] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAccessForm, setShowAccessForm] = useState(false);
   const [accessFamilyName, setAccessFamilyName] = useState("");
   const [accessCode, setAccessCode] = useState("");
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   const handleCreateNew = () => {
     if (newFamilyName.trim()) {
@@ -339,6 +345,29 @@ const FamilySelector = ({
 
   return (
     <div className="container">
+      {/* Auth Panel - Top Left */}
+      <div className="auth-panel">
+        {user ? (
+          <div className="profile-section">
+            <button
+              className="profile-btn"
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            >
+              👤 {user.email}
+            </button>
+            {showProfileDropdown && (
+              <div className="profile-dropdown">
+                <button onClick={onLogout}>Logout</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button className="auth-btn" onClick={onShowAuthModal}>
+            Login / Sign Up
+          </button>
+        )}
+      </div>
+
       {/*left container panel */}
       <div className="content-panel">
         <h1>Build and Share Your Family History</h1>
@@ -496,7 +525,355 @@ const FamilySelector = ({
   );
 };
 
-const Flow = () => {
+const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (mode === "login") {
+      onLogin(email, password);
+    } else {
+      if (password !== confirmPassword) {
+        alert("Passwords do not match");
+        return;
+      }
+      onSignup(email, password);
+    }
+  };
+
+  // Clear confirm password when switching modes
+  React.useEffect(() => {
+    if (mode === "login") {
+      setConfirmPassword("");
+      setShowConfirmPassword(false);
+    }
+  }, [mode]);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(8px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        animation: "fadeIn 0.3s ease-out",
+      }}
+    >
+      <div
+        style={{
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          padding: "40px",
+          borderRadius: "20px",
+          width: "400px",
+          maxWidth: "90vw",
+          textAlign: "center",
+          boxShadow:
+            "0 25px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8)",
+          border: "1px solid rgba(0, 0, 0, 0.05)",
+          animation: "slideUp 0.4s ease-out",
+        }}
+      >
+        <h2
+          style={{
+            marginBottom: "30px",
+            color: "#1e293b",
+            fontSize: "28px",
+            fontWeight: "700",
+            letterSpacing: "-0.025em",
+          }}
+        >
+          {mode === "login" ? "Welcome Back" : "Create Your Account"}
+        </h2>
+        <form onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "14px 18px",
+                border: "2px solid #e2e8f0",
+                borderRadius: "12px",
+                fontSize: "16px",
+                fontFamily: "inherit",
+                background: "rgba(255, 255, 255, 0.8)",
+                backdropFilter: "blur(10px)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#3b82f6";
+                e.target.style.boxShadow = "0 0 0 4px rgba(59, 130, 246, 0.1)";
+                e.target.style.background = "rgba(255, 255, 255, 0.95)";
+                e.target.style.transform = "translateY(-1px)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#e2e8f0";
+                e.target.style.boxShadow = "none";
+                e.target.style.background = "rgba(255, 255, 255, 0.8)";
+                e.target.style.transform = "translateY(0)";
+              }}
+            />
+          </div>
+          <div style={{ marginBottom: "24px", position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "14px 50px 14px 18px",
+                border: "2px solid #e2e8f0",
+                borderRadius: "12px",
+                fontSize: "16px",
+                fontFamily: "inherit",
+                background: "rgba(255, 255, 255, 0.8)",
+                backdropFilter: "blur(10px)",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#3b82f6";
+                e.target.style.boxShadow = "0 0 0 4px rgba(59, 130, 246, 0.1)";
+                e.target.style.background = "rgba(255, 255, 255, 0.95)";
+                e.target.style.transform = "translateY(-1px)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#e2e8f0";
+                e.target.style.boxShadow = "none";
+                e.target.style.background = "rgba(255, 255, 255, 0.8)";
+                e.target.style.transform = "translateY(0)";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "14px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "#64748b",
+                fontSize: "18px",
+                padding: "4px",
+                borderRadius: "4px",
+                transition: "color 0.2s ease",
+              }}
+              onMouseEnter={(e) => (e.target.style.color = "#3b82f6")}
+              onMouseLeave={(e) => (e.target.style.color = "#64748b")}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
+          </div>
+          {mode === "signup" && (
+            <div style={{ marginBottom: "24px", position: "relative" }}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                style={{
+                  width: "100%",
+                  padding: "14px 50px 14px 18px",
+                  border: "2px solid #e2e8f0",
+                  borderRadius: "12px",
+                  fontSize: "16px",
+                  fontFamily: "inherit",
+                  background: "rgba(255, 255, 255, 0.8)",
+                  backdropFilter: "blur(10px)",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  boxSizing: "border-box",
+                  outline: "none",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "#3b82f6";
+                  e.target.style.boxShadow =
+                    "0 0 0 4px rgba(59, 130, 246, 0.1)";
+                  e.target.style.background = "rgba(255, 255, 255, 0.95)";
+                  e.target.style.transform = "translateY(-1px)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "#e2e8f0";
+                  e.target.style.boxShadow = "none";
+                  e.target.style.background = "rgba(255, 255, 255, 0.8)";
+                  e.target.style.transform = "translateY(0)";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{
+                  position: "absolute",
+                  right: "14px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#64748b",
+                  fontSize: "18px",
+                  padding: "4px",
+                  borderRadius: "4px",
+                  transition: "color 0.2s ease",
+                }}
+                onMouseEnter={(e) => (e.target.style.color = "#3b82f6")}
+                onMouseLeave={(e) => (e.target.style.color = "#64748b")}
+              >
+                {showConfirmPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
+          )}
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              padding: "16px 24px",
+              background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              boxShadow: "0 4px 14px rgba(59, 130, 246, 0.3)",
+              marginBottom: "16px",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background =
+                "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)";
+              e.target.style.transform = "translateY(-2px)";
+              e.target.style.boxShadow = "0 8px 25px rgba(59, 130, 246, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background =
+                "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)";
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "0 4px 14px rgba(59, 130, 246, 0.3)";
+            }}
+          >
+            {mode === "login" ? "Sign In" : "Create Account"}
+          </button>
+        </form>
+        <div style={{ marginBottom: "16px", textAlign: "center" }}>
+          <p
+            style={{
+              fontSize: "14px",
+              color: "#64748b",
+              margin: "0 0 12px 0",
+              lineHeight: "1.4",
+            }}
+          >
+            <strong>💾 Login to sync</strong> your family trees across all
+            devices
+            <br />
+            <strong>📱 Continue as guest</strong> to save locally for 24 hours
+          </p>
+          <button
+            onClick={onSwitchMode}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#3b82f6",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "500",
+              textDecoration: "underline",
+              transition: "color 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.target.style.color = "#1d4ed8")}
+            onMouseLeave={(e) => (e.target.style.color = "#3b82f6")}
+          >
+            {mode === "login"
+              ? "Don't have an account? Sign up"
+              : "Already have an account? Sign in"}
+          </button>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            padding: "10px 20px",
+            background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: "500",
+            cursor: "pointer",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            boxShadow: "0 2px 8px rgba(239, 68, 68, 0.3)",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background =
+              "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)";
+            e.target.style.transform = "translateY(-1px)";
+            e.target.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background =
+              "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)";
+            e.target.style.transform = "translateY(0)";
+            e.target.style.boxShadow = "0 2px 8px rgba(239, 68, 68, 0.3)";
+          }}
+        >
+          Save Locally (24h)
+        </button>
+      </div>
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px) scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
+const Flow = ({
+  user,
+  token,
+  showAuthModal,
+  setShowAuthModal,
+  authMode,
+  setAuthMode,
+  onLogin,
+  onSignup,
+  onLogout,
+}) => {
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const [theme, setTheme] = useState<string>("light");
@@ -512,6 +889,8 @@ const Flow = () => {
     useState<boolean>(false);
   const [accessCodeInput, setAccessCodeInput] = useState<string>("");
   const [showAdminDashboard, setShowAdminDashboard] = useState(true);
+  const [showProfileDropdown, setShowProfileDropdown] =
+    useState<boolean>(false);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -563,10 +942,13 @@ const Flow = () => {
     if (!userId) return;
 
     try {
+      const headers: any = { "X-User-ID": userId };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/family-tree`, {
-        headers: {
-          "X-User-ID": userId,
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -582,6 +964,25 @@ const Flow = () => {
   // Fix the loadPersistedFamily function to properly sync with server data
   const loadPersistedFamily = async () => {
     try {
+      // First check for temp family tree (expires in 24 hours)
+      const tempData = localStorage.getItem("tempFamilyTree");
+      if (tempData) {
+        const tempFamilyData = JSON.parse(tempData);
+        if (Date.now() < tempFamilyData.expiresAt) {
+          setCurrentFamily(tempFamilyData.name);
+          setNodes(addCallbacksToNodes(tempFamilyData.nodes));
+          setEdges(tempFamilyData.edges);
+          setShareableLink(
+            `${window.location.href}?family=${encodeURIComponent(
+              tempFamilyData.name
+            )}`
+          );
+          return;
+        } else {
+          localStorage.removeItem("tempFamilyTree");
+        }
+      }
+
       const persistedData = localStorage.getItem("currentFamilyTree");
       if (persistedData) {
         const familyData = JSON.parse(persistedData);
@@ -590,10 +991,13 @@ const Flow = () => {
         if (Date.now() - familyData.timestamp < oneDay) {
           // check if this family exists in server and load the latest version
           try {
+            const headers: any = { "X-User-ID": userId };
+            if (token) {
+              headers.Authorization = `Bearer ${token}`;
+            }
+
             const response = await fetch(`${API_BASE_URL}/family-tree`, {
-              headers: {
-                "X-User-ID": userId,
-              },
+              headers,
             });
 
             if (response.ok) {
@@ -645,6 +1049,7 @@ const Flow = () => {
     } catch (error) {
       console.error("Error loading persisted family:", error);
       localStorage.removeItem("currentFamilyTree");
+      localStorage.removeItem("tempFamilyTree");
     }
   };
   // Load persisted family when userId is available
@@ -660,17 +1065,29 @@ const Flow = () => {
       return;
     }
 
+    // Check if user is logged in
+    if (!user) {
+      // Show auth modal
+      setShowAuthModal(true);
+      return;
+    }
+
     try {
+      const headers: any = {
+        "Content-Type": "application/json",
+        "X-User-ID": userId,
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       if (currentFamilyId) {
         // Update existing family tree
         const response = await fetch(
           `${API_BASE_URL}/family-tree/${currentFamilyId}`,
           {
             method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "X-User-ID": userId,
-            },
+            headers,
             body: JSON.stringify({
               data: { nodes, edges },
             }),
@@ -704,10 +1121,7 @@ const Flow = () => {
 
         const response = await fetch(`${API_BASE_URL}/family-tree`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-User-ID": userId,
-          },
+          headers,
           body: JSON.stringify({
             name: trimmedName,
             data: { nodes, edges },
@@ -759,6 +1173,22 @@ const Flow = () => {
       console.error("Error saving family tree:", error);
       alert("Error saving family tree. See console for details.");
     }
+  };
+
+  // Function to save locally with expiration
+  const saveLocallyWithExpiration = () => {
+    const expirationTime = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    const familyData = {
+      name: currentFamily,
+      nodes,
+      edges,
+      timestamp: Date.now(),
+      expiresAt: expirationTime,
+    };
+    localStorage.setItem("tempFamilyTree", JSON.stringify(familyData));
+    alert(
+      "Family tree saved locally for 24 hours. Sign up to save permanently across devices."
+    );
   };
   // Helper function to ensure all nodes have the required callbacks
   const addCallbacksToNodes = (nodeList) => {
@@ -1388,12 +1818,68 @@ const Flow = () => {
         onCreateNew={handleCreateNewFamily}
         savedFamilies={savedFamilies}
         onAccessWithCode={accessFamilyWithCode}
+        user={user}
+        onLogin={onLogin}
+        onSignup={onSignup}
+        onLogout={onLogout}
+        onShowAuthModal={() => {
+          setAuthMode("login");
+          setShowAuthModal(true);
+        }}
       />
     );
   }
 
   return (
     <div ref={reactFlowWrapper} className={`flow-container ${theme}`}>
+      {/* Auth Panel - Top Right */}
+      <div
+        className="auth-panel"
+        style={{ position: "fixed", top: "20px", right: "20px", zIndex: 1000 }}
+      >
+        {user ? (
+          <div className="profile-section">
+            <button
+              className="profile-btn"
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            >
+              👤 {user.email}
+            </button>
+            {showProfileDropdown && (
+              <div className="profile-dropdown">
+                <button onClick={onLogout}>Logout</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            className="auth-btn"
+            onClick={() => {
+              setAuthMode("login");
+              setShowAuthModal(true);
+            }}
+          >
+            Login / Sign Up
+          </button>
+        )}
+      </div>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal
+          mode={authMode}
+          onLogin={onLogin}
+          onSignup={onSignup}
+          onSwitchMode={() =>
+            setAuthMode(authMode === "login" ? "signup" : "login")
+          }
+          onClose={() => {
+            setShowAuthModal(false);
+            // Note: saveLocallyWithExpiration will be called from Flow component
+          }}
+        />
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -1519,11 +2005,106 @@ const Flow = () => {
 };
 
 export function App() {
+  // Auth state - moved to App level for global access
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+
+  // Load auth state on mount
+  useEffect(() => {
+    const storedToken = localStorage.getItem("authToken");
+    const storedUser = localStorage.getItem("authUser");
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  // Auth functions
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUser(data.user);
+        setToken(data.token);
+        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("authUser", JSON.stringify(data.user));
+        setShowAuthModal(false);
+        // Reload families after login - this will be handled by Flow component
+      } else {
+        alert(data.error || "Login failed");
+      }
+    } catch (error) {
+      alert("Login failed");
+    }
+  };
+
+  const signup = async (email: string, password: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUser(data.user);
+        setToken(data.token);
+        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("authUser", JSON.stringify(data.user));
+        setShowAuthModal(false);
+        // Reload families after signup - this will be handled by Flow component
+      } else {
+        alert(data.error || "Signup failed");
+      }
+    } catch (error) {
+      alert("Signup failed");
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
+  };
+
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       <ReactFlowProvider>
-        <Flow />
+        <Flow
+          user={user}
+          token={token}
+          showAuthModal={showAuthModal}
+          setShowAuthModal={setShowAuthModal}
+          authMode={authMode}
+          setAuthMode={setAuthMode}
+          onLogin={login}
+          onSignup={signup}
+          onLogout={logout}
+        />
       </ReactFlowProvider>
+      {/* Global Auth Modal */}
+      {showAuthModal && (
+        <AuthModal
+          mode={authMode}
+          onLogin={login}
+          onSignup={signup}
+          onSwitchMode={() =>
+            setAuthMode(authMode === "login" ? "signup" : "login")
+          }
+          onClose={() => {
+            setShowAuthModal(false);
+            // Note: saveLocallyWithExpiration will be called from Flow component
+          }}
+        />
+      )}
     </div>
   );
 }
