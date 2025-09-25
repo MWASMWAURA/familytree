@@ -773,6 +773,17 @@ body {
   .drawer.open {
     pointer-events: auto;
   }
+
+  /* Mobile responsive admin drawer */
+  .admin-drawer {
+    width: 90vw !important;
+    max-width: 400px;
+    right: -90vw !important;
+  }
+
+  .admin-drawer.open {
+    right: 10px !important;
+  }
 }
 
 /* Overlay for drawer backdrop on mobile */
