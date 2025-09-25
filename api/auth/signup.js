@@ -46,11 +46,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    console.log('Signup request received');
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
     if (!process.env.DATABASE_URL && !process.env.CONNECTION_STRING) {
+      console.log('No DATABASE_URL configured');
       return res.status(500).json({ error: 'Database not configured. Please set DATABASE_URL environment variable.' });
     }
+    console.log('Initializing database...');
     await initDb();
+    console.log('Database initialized');
     const { email, password } = req.body;
+    console.log('Request body:', { email: email ? 'present' : 'missing', password: password ? 'present' : 'missing' });
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -97,9 +103,10 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('Signup error:', err);
+    console.error('Error stack:', err.stack);
     if (err.code === '23505') { // Unique constraint violation
       return res.status(409).json({ error: 'User with this email already exists' });
     }
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error', details: err.message });
   }
 };
