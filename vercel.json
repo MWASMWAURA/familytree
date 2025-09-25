@@ -2,7 +2,7 @@
   "version": 2,
   "routes": [
     {
-      "src": "/((?!assets/).*)",
+      "src": "/((?!api/|assets/).*)",
       "dest": "/index.html"
     }
   ]
