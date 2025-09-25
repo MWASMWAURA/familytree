@@ -7,11 +7,16 @@ interface AdminDashboardProps {
   accessCode: string;
   userId: string;
   onRegenerateCode: () => void;
-  onAddAdmin: (newAdminId: string) => void;
+  onAddAdmin: (newAdminEmail: string) => void;
   theme: string;
   compact?: boolean;
   showQuickAction?: boolean;
   isModal?: boolean;
+}
+
+interface GeneratedToken {
+  token: string;
+  expiresAt: string;
 }
 
 interface ActivityLog {
@@ -34,7 +39,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   showQuickAction,
   isModal = true,
 }) => {
-  const [newAdminId, setNewAdminId] = useState("");
+  const [newAdminEmail, setNewAdminEmail] = useState("");
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const [dimensions, setDimensions] = useState({ width: 320, height: 300 }); // increased height for logs
@@ -47,6 +52,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [errorLogs, setErrorLogs] = useState<string | null>(null);
+  const [generatedToken, setGeneratedToken] = useState<GeneratedToken | null>(
+    null
+  );
+  const [generatingToken, setGeneratingToken] = useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
   const minWidth = 320;
   const minHeight = 200;
@@ -197,9 +206,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }?family=${encodeURIComponent(currentFamily)}&code=${accessCode}&admin=true`;
 
   const handleAddAdmin = () => {
-    if (newAdminId.trim()) {
-      onAddAdmin(newAdminId.trim());
-      setNewAdminId("");
+    if (newAdminEmail.trim()) {
+      onAddAdmin(newAdminEmail.trim());
+      setNewAdminEmail("");
       setShowAdminForm(false);
     }
   };
@@ -265,6 +274,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       "Edit functionality: This would allow editing the family tree to revert changes manually."
     );
     // Could implement opening the tree editor or something
+  };
+
+  const handleGenerateToken = async () => {
+    if (!currentFamilyId || !userId) return;
+    setGeneratingToken(true);
+    try {
+      const response = await fetch(
+        `http://localhost:3001/api/family-tree/${currentFamilyId}/generate-token`,
+        {
+          method: "POST",
+          headers: {
+            "X-User-ID": userId,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to generate token");
+      }
+      const data = await response.json();
+      setGeneratedToken(data);
+      fetchActivityLogs(); // Refresh logs to show the token generation
+    } catch (error: any) {
+      alert(`Error generating token: ${error.message}`);
+    } finally {
+      setGeneratingToken(false);
+    }
   };
 
   React.useEffect(() => {
@@ -577,11 +612,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               style={{ display: "flex", flexDirection: "column", gap: 4 }}
             >
               <input
-                type="text"
-                value={newAdminId}
-                onChange={(e) => setNewAdminId(e.target.value)}
-                placeholder="Enter User ID to add as admin"
-                className="admin-id-input"
+                type="email"
+                value={newAdminEmail}
+                onChange={(e) => setNewAdminEmail(e.target.value)}
+                placeholder="Enter email address to add as admin"
+                className="admin-email-input"
                 style={{ ...compactInputStyles, fontSize: 12 }}
                 autoFocus
               />
@@ -603,17 +638,97 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   onClick={() => {
                     setShowAdminForm(false);
-                    setNewAdminId("");
+                    setNewAdminEmail("");
                   }}
-                  className="cancel-btn"
+                  className="cancel-btn-admin"
                   style={{
                     ...compactButtonStyles,
-                    fontSize: 13,
-                    padding: "2px 10px",
+                    fontSize: 11,
+                    padding: "2px 8px",
                   }}
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Token Generator Section */}
+        <div className="admin-section" style={{ marginBottom: 10 }}>
+          <h4 style={{ margin: "6px 0 2px 0", fontSize: 15, fontWeight: 600 }}>
+            Temporary Access Token
+          </h4>
+          <div style={{ marginBottom: 8 }}>
+            <button
+              className="generate-token-btn"
+              onClick={handleGenerateToken}
+              disabled={generatingToken}
+              style={{
+                ...compactButtonStyles,
+                fontSize: 13,
+                padding: "2px 10px",
+                background: generatingToken ? "#ccc" : "#4CAF50",
+                color: "white",
+                border: "none",
+                borderRadius: 4,
+                cursor: generatingToken ? "not-allowed" : "pointer",
+              }}
+            >
+              {generatingToken ? "Generating..." : "🔑 Generate Token"}
+            </button>
+          </div>
+          {generatedToken && (
+            <div
+              className="generated-token"
+              style={{
+                backgroundColor: theme === "dark" ? "#333" : "#f9f9f9",
+                padding: 8,
+                borderRadius: 4,
+                border: "1px solid #ddd",
+                marginTop: 8,
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                Generated Token:
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  marginBottom: 4,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: 14,
+                    wordBreak: "break-all",
+                    backgroundColor: theme === "dark" ? "#444" : "#fff",
+                    padding: 4,
+                    borderRadius: 2,
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  {generatedToken.token}
+                </div>
+                <button
+                  className="copy-btn"
+                  style={{ fontSize: 14, padding: "2px 6px" }}
+                  onClick={() =>
+                    copyToClipboard(generatedToken.token, "Access token")
+                  }
+                  title="Copy token"
+                >
+                  📋
+                </button>
+              </div>
+              <div style={{ fontSize: 12, color: "#666" }}>
+                Expires: {new Date(generatedToken.expiresAt).toLocaleString()}
+              </div>
+              <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+                Share this token with someone for temporary access (24 hours)
               </div>
             </div>
           )}

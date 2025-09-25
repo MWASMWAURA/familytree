@@ -191,6 +191,17 @@ const initDb = async () => {
     );
   `);
 
+  // Access tokens table for temporary access
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS access_tokens (
+      id SERIAL PRIMARY KEY,
+      family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
+      token TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
   // Create indexes for better performance
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_family_trees_name ON family_trees(name);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_family_admins_family_id ON family_admins(family_id);`);
@@ -464,17 +475,17 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
     // Get messages from both messages table and activity logs
     const messagesResult = await pool.query(`
       SELECT
-        id,
+        m.id,
         message,
         message_type,
         family_id,
         is_read,
-        created_at,
+        m.created_at,
         ft.name as family_name
       FROM messages m
       LEFT JOIN family_trees ft ON m.family_id = ft.id
       WHERE m.user_id = $1
-      ORDER BY created_at DESC
+      ORDER BY m.created_at DESC
     `, [userId]);
 
     // Get activity log messages where user is affected
@@ -485,6 +496,7 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
           WHEN al.action = 'change_name' THEN 'Family name was changed for "' || ft.name || '"'
           WHEN al.action = 'delete_family' THEN 'A family was deleted by admin'
           WHEN al.action = 'regenerate_code' THEN 'Access code for "' || ft.name || '" was changed'
+          WHEN al.action = 'generate_token' THEN 'A temporary access token was generated for "' || ft.name || '"'
           ELSE al.action
         END as message,
         'activity' as message_type,
@@ -497,7 +509,7 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
       LEFT JOIN family_admins fa ON ft.id = fa.family_id AND fa.user_id = $1
       WHERE (fa.user_id = $1 OR ft.admin_id = $1)
         AND al.user_id != $1
-        AND al.action IN ('change_name', 'delete_family', 'regenerate_code')
+        AND al.action IN ('change_name', 'delete_family', 'regenerate_code', 'generate_token')
       ORDER BY al.created_at DESC
       LIMIT 20
     `, [userId]);
@@ -537,7 +549,7 @@ app.post('/api/messages/mark-read', authenticateToken, async (req, res) => {
   }
 });
 
-// Endpoint to access family tree with access code
+// Endpoint to access family tree with access code or token
 app.post('/api/family-tree/access', getUserId, async (req, res) => {
   const { familyName, accessCode } = req.body;
   const userId = req.userId;
@@ -547,13 +559,23 @@ app.post('/api/family-tree/access', getUserId, async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
+    // First try to find family by name and access code
+    let result = await pool.query(
       'SELECT * FROM family_trees WHERE LOWER(name) = LOWER($1) AND access_code = $2',
       [familyName, accessCode]
     );
 
+    // If not found by access code, check if accessCode is actually a token
     if (result.rows.length === 0) {
-      return res.status(403).json({ error: 'Invalid family name or access code' });
+      const tokenResult = await pool.query(
+        'SELECT ft.* FROM access_tokens at JOIN family_trees ft ON at.family_id = ft.id WHERE at.token = $1 AND at.expires_at > NOW()',
+        [accessCode]
+      );
+      if (tokenResult.rows.length > 0) {
+        result = tokenResult;
+      } else {
+        return res.status(403).json({ error: 'Invalid family name, access code, or token' });
+      }
     }
 
     const family = result.rows[0];
@@ -564,7 +586,16 @@ app.post('/api/family-tree/access', getUserId, async (req, res) => {
       [family.id, userId, 'access', JSON.stringify({ familyName, accessCode })]
     );
 
-    res.json({ family, isAdmin: family.admin_id === userId });
+    // Check if user is admin
+    const adminCheck = await pool.query(`
+      SELECT fa.user_id as admin_user_id
+      FROM family_admins fa
+      WHERE fa.family_id = $1 AND fa.user_id = $2
+    `, [family.id, userId]);
+
+    const isAdmin = adminCheck.rows.length > 0 || family.admin_id === userId;
+
+    res.json({ family, isAdmin });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to access family tree' });
@@ -634,11 +665,11 @@ app.put('/api/family-tree/:id', getUserId, async (req, res) => {
 // Endpoint to add admin to family
 app.post('/api/family-tree/:id/admin', getUserId, async (req, res) => {
   const { id } = req.params;
-  const { newAdminId } = req.body;
+  const { newAdminEmail } = req.body;
   const userId = req.userId;
 
-  if (!newAdminId) {
-    return res.status(400).json({ error: 'Missing required field: newAdminId' });
+  if (!newAdminEmail) {
+    return res.status(400).json({ error: 'Missing required field: newAdminEmail' });
   }
 
   try {
@@ -652,6 +683,18 @@ app.post('/api/family-tree/:id/admin', getUserId, async (req, res) => {
       return res.status(403).json({ error: 'Only admins can add other admins' });
     }
 
+    // Find user by email
+    const userResult = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [newAdminEmail.trim()]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User with this email not found' });
+    }
+
+    const newAdminId = userResult.rows[0].id;
+
     // Add new admin
     await pool.query(
       `INSERT INTO family_admins (family_id, user_id, added_by) VALUES ($1, $2, $3)`,
@@ -661,7 +704,7 @@ app.post('/api/family-tree/:id/admin', getUserId, async (req, res) => {
     // Log the admin addition
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [id, userId, 'add_admin', JSON.stringify({ newAdminId })]
+      [id, userId, 'add_admin', JSON.stringify({ newAdminEmail, newAdminId })]
     );
 
     res.json({ message: 'Admin added successfully' });
@@ -777,6 +820,45 @@ app.post('/api/family-tree/:id/regenerate-code', getUserId, async (req, res) => 
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to regenerate access code' });
+  }
+});
+
+// Endpoint to generate temporary access token for family
+app.post('/api/family-tree/:id/generate-token', getUserId, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+
+  try {
+    // Check if current user is admin of this family
+    const adminCheck = await pool.query(`
+      SELECT * FROM family_admins
+      WHERE family_id = $1 AND user_id = $2
+    `, [id, userId]);
+
+    if (adminCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Only admins can generate access tokens' });
+    }
+
+    // Generate a new token
+    const token = crypto.randomBytes(16).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day
+
+    // Insert token into DB
+    await pool.query(
+      `INSERT INTO access_tokens (family_id, token, expires_at) VALUES ($1, $2, $3)`,
+      [id, token, expiresAt]
+    );
+
+    // Log the token generation
+    await pool.query(
+      `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
+      [id, userId, 'generate_token', JSON.stringify({ token, expiresAt })]
+    );
+
+    res.json({ token, expiresAt });
+  } catch (err) {
+    console.error('Failed to generate access token:', err);
+    res.status(500).json({ error: 'Failed to generate access token' });
   }
 });
 // Endpoint to hide family tree for non-admin users (soft delete)

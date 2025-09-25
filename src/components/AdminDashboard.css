@@ -198,7 +198,7 @@
   transform: translateY(-1px);
 }
 
-.cancel-btn {
+.cancel-btn-admin {
   background: #95a5a6;
   color: white;
   border: none;
@@ -210,7 +210,7 @@
   transition: all 0.2s ease;
 }
 
-.cancel-btn:hover {
+.cancel-btn-admin:hover {
   background: #7f8c8d;
   transform: translateY(-1px);
 }
@@ -342,7 +342,7 @@
     font-size: 12px;
   }
 
-  .confirm-btn, .cancel-btn {
+  .confirm-btn, .cancel-btn-admin {
     width: 100%;
     padding: 8px;
     font-size: 14px;

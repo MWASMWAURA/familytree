@@ -51,13 +51,22 @@ export default async function handler(req, res) {
     }
 
     // Find family by name and access code
-    const result = await pool.query(
+    let result = await pool.query(
       'SELECT * FROM family_trees WHERE LOWER(name) = LOWER($1) AND access_code = $2',
       [familyName, accessCode]
     );
 
+    // If not found by access code, check if accessCode is actually a token
     if (result.rows.length === 0) {
-      return res.status(403).json({ error: 'Invalid family name or access code' });
+      const tokenResult = await pool.query(
+        'SELECT ft.* FROM access_tokens at JOIN family_trees ft ON at.family_id = ft.id WHERE at.token = $1 AND at.expires_at > NOW()',
+        [accessCode]
+      );
+      if (tokenResult.rows.length > 0) {
+        result = tokenResult;
+      } else {
+        return res.status(403).json({ error: 'Invalid family name, access code, or token' });
+      }
     }
 
     const family = result.rows[0];

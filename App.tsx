@@ -2917,7 +2917,7 @@ const Flow = ({
   };
 
   // Function to add admin to family
-  const addAdminToFamily = async (newAdminId) => {
+  const addAdminToFamily = async (newAdminEmail) => {
     if (!userId || !currentFamilyId) {
       alert("User not authenticated or no family selected.");
       return;
@@ -2933,7 +2933,7 @@ const Flow = ({
             "X-User-ID": userId,
           },
           body: JSON.stringify({
-            newAdminId,
+            newAdminEmail,
           }),
         }
       );
@@ -2941,6 +2941,8 @@ const Flow = ({
       if (!response.ok) {
         if (response.status === 403) {
           alert("Only admins can add other admins.");
+        } else if (response.status === 404) {
+          alert("User with this email not found.");
         } else if (response.status === 409) {
           alert("User is already an admin of this family.");
         } else {
