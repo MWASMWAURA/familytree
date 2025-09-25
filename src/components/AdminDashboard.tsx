@@ -226,14 +226,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setLoadingLogs(true);
     setErrorLogs(null);
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/family-tree/${currentFamilyId}/logs`,
-        {
-          headers: {
-            "X-User-ID": userId,
-          },
-        }
-      );
+      const response = await fetch(`/api/family-tree/${currentFamilyId}/logs`, {
+        headers: {
+          "X-User-ID": userId,
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch activity logs");
       }
@@ -250,7 +247,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!currentFamilyId || !userId) return;
     try {
       const response = await fetch(
-        `http://localhost:3001/api/family-tree/${currentFamilyId}/undo/${logId}`,
+        `/api/family-tree/${currentFamilyId}/undo/${logId}`,
         {
           method: "POST",
           headers: {
@@ -281,7 +278,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setGeneratingToken(true);
     try {
       const response = await fetch(
-        `http://localhost:3001/api/family-tree/${currentFamilyId}/generate-token`,
+        `/api/family-tree/${currentFamilyId}/generate-token`,
         {
           method: "POST",
           headers: {

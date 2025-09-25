@@ -419,7 +419,10 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
   const { name } = req.body;
   const userId = req.userId;
 
+  console.log('PUT /api/family-tree/:id/name called', { id, familyId, name, userId });
+
   if (!name || !name.trim()) {
+    console.log('Name validation failed: name is empty');
     return res.status(400).json({ error: 'Name is required' });
   }
 
@@ -430,7 +433,10 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
       WHERE family_id = $1 AND user_id = $2
     `, [familyId, userId]);
 
+    console.log('Admin check result:', adminCheck.rows.length);
+
     if (adminCheck.rows.length === 0) {
+      console.log('User is not admin');
       return res.status(403).json({ error: 'Only admins can change family name' });
     }
 
@@ -440,7 +446,10 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
       [name.trim(), familyId]
     );
 
+    console.log('Existing family check:', existingFamily.rows.length);
+
     if (existingFamily.rows.length > 0) {
+      console.log('Family name already exists');
       return res.status(409).json({ error: 'Family name already exists' });
     }
 
@@ -448,21 +457,26 @@ app.put('/api/family-tree/:id/name', getUserId, async (req, res) => {
     const currentFamily = await pool.query('SELECT name FROM family_trees WHERE id = $1', [familyId]);
     const oldName = currentFamily.rows[0].name;
 
+    console.log('Updating name from', oldName, 'to', name.trim());
+
     // Update the family name
     const result = await pool.query(
       'UPDATE family_trees SET name = $1 WHERE id = $2 RETURNING *',
       [name.trim(), familyId]
     );
 
+    console.log('Update result:', result.rows[0]);
+
     // Log the name change
     await pool.query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
-      [familyId, userId, 'change_name', JSON.stringify({})]
+      [familyId, userId, 'change_name', JSON.stringify({ oldName, newName: name.trim() })]
     );
 
+    console.log('Name update successful');
     res.json({ family: result.rows[0] });
   } catch (err) {
-    console.error(err);
+    console.error('Error updating family name:', err);
     res.status(500).json({ error: 'Database error occurred while updating family name' });
   }
 });
@@ -905,6 +919,8 @@ app.delete('/api/family-tree/:id', getUserId, async (req, res) => {
   const { id } = req.params;
   const userId = req.userId;
 
+  console.log('DELETE /api/family-tree/:id called', { id, userId });
+
   try {
     // Check if current user is admin of this family
     const adminCheck = await pool.query(`
@@ -912,7 +928,10 @@ app.delete('/api/family-tree/:id', getUserId, async (req, res) => {
       WHERE family_id = $1 AND user_id = $2
     `, [id, userId]);
 
+    console.log('Delete admin check result:', adminCheck.rows.length);
+
     if (adminCheck.rows.length === 0) {
+      console.log('User is not admin, cannot delete');
       return res.status(403).json({ error: 'Only admins can delete family trees' });
     }
 
@@ -920,8 +939,12 @@ app.delete('/api/family-tree/:id', getUserId, async (req, res) => {
     const familyData = await pool.query('SELECT name FROM family_trees WHERE id = $1', [id]);
     const familyName = familyData.rows[0]?.name;
 
+    console.log('Deleting family:', familyName);
+
     // Delete the family tree (cascade will handle related records)
     await pool.query('DELETE FROM family_trees WHERE id = $1', [id]);
+
+    console.log('Family deleted successfully');
 
     // Log the deletion AFTER deleting (but don't fail if logging fails)
     try {
@@ -929,6 +952,7 @@ app.delete('/api/family-tree/:id', getUserId, async (req, res) => {
         `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
         [id, userId, 'delete_family', JSON.stringify({ familyName })]
       );
+      console.log('Deletion logged');
     } catch (logErr) {
       console.warn('Failed to log deletion activity:', logErr.message);
       // Don't fail the deletion if logging fails
