@@ -3483,6 +3483,7 @@ const Flow = ({
                   onClick={() => {
                     setEditNameValue(currentFamily || "");
                     setShowEditNameModal(true);
+                    setShowRightDrawer(false);
                   }}
                   style={{
                     background: "none",

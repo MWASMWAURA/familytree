@@ -516,9 +516,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             marginBottom: 10,
             textAlign: "center",
             letterSpacing: 1.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
           }}
         >
           {accessCode}
+          <button
+            className="copy-btn"
+            style={{ fontSize: 16, padding: "4px 8px" }}
+            onClick={() => {
+              copyToClipboard(accessCode, "Access code");
+              onCloseDrawer?.();
+            }}
+            title="Copy access code"
+          >
+            📋
+          </button>
         </div>
         <div className="admin-section" style={{ marginBottom: 10 }}>
           <h4 style={{ margin: "6px 0 2px 0", fontSize: 15, fontWeight: 600 }}>
