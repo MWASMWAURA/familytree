@@ -1857,6 +1857,12 @@ const Flow = ({
   const [isActivatingPremium, setIsActivatingPremium] =
     useState<boolean>(false);
 
+  // Mobile drawer states
+  const [showLeftDrawer, setShowLeftDrawer] = useState<boolean>(false);
+  const [showRightDrawer, setShowRightDrawer] = useState<boolean>(false);
+  const [showBottomDrawer, setShowBottomDrawer] = useState<boolean>(false);
+  const [showAdminDrawer, setShowAdminDrawer] = useState<boolean>(false);
+
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -3313,6 +3319,333 @@ const Flow = ({
         />
       )}
 
+      {/* Mobile Drawer Overlay */}
+      {(showLeftDrawer ||
+        showRightDrawer ||
+        showBottomDrawer ||
+        showAdminDrawer) && (
+        <div
+          className="drawer-overlay active"
+          onClick={() => {
+            setShowLeftDrawer(false);
+            setShowRightDrawer(false);
+            setShowBottomDrawer(false);
+            setShowAdminDrawer(false);
+          }}
+        />
+      )}
+
+      {/* Mobile Drawer Toggle Buttons */}
+      <div className="mobile-drawer-toggles">
+        <button
+          className="drawer-toggle left-toggle"
+          onClick={() => setShowLeftDrawer(!showLeftDrawer)}
+          title="Layout & View Controls"
+        >
+          ⚙️
+        </button>
+        <button
+          className="drawer-toggle right-toggle"
+          onClick={() => setShowRightDrawer(!showRightDrawer)}
+          title="Family & Export Controls"
+        >
+          📋
+        </button>
+        <button
+          className="drawer-toggle bottom-toggle"
+          onClick={() => setShowBottomDrawer(!showBottomDrawer)}
+          title="Messages"
+        >
+          💬
+        </button>
+        {isAdmin && (
+          <button
+            className="drawer-toggle admin-toggle"
+            onClick={() => setShowAdminDrawer(!showAdminDrawer)}
+            title="Admin Dashboard"
+          >
+            👑
+          </button>
+        )}
+      </div>
+
+      {/* Left Drawer - Layout & View Controls */}
+      <div className={`drawer left-drawer ${showLeftDrawer ? "open" : ""}`}>
+        <div className="drawer-header">
+          <h4>Controls</h4>
+          <button
+            className="drawer-close"
+            onClick={() => setShowLeftDrawer(false)}
+          >
+            ✕
+          </button>
+        </div>
+        <div className="drawer-content">
+          <div className="panel-section">
+            <h4>Layout</h4>
+            <button className="control-btn" onClick={() => onLayout("TB")}>
+              ↓ Vertical
+            </button>
+            <button className="control-btn" onClick={() => onLayout("LR")}>
+              → Horizontal
+            </button>
+          </div>
+          <div className="panel-section">
+            <h4>View</h4>
+            <button className="control-btn" onClick={() => zoomIn()}>
+              🔍+ Zoom In
+            </button>
+            <button className="control-btn" onClick={() => zoomOut()}>
+              🔍- Zoom Out
+            </button>
+            <button className="control-btn" onClick={() => fitView()}>
+              📐 Fit View
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Drawer - Family & Export Controls */}
+      <div className={`drawer right-drawer ${showRightDrawer ? "open" : ""}`}>
+        <div className="drawer-header">
+          <h4>Family & Export</h4>
+          <button
+            className="drawer-close"
+            onClick={() => setShowRightDrawer(false)}
+          >
+            ✕
+          </button>
+        </div>
+        <div className="drawer-content">
+          <div className="panel-section">
+            <div
+              style={{
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  color: "#1e293b",
+                }}
+              >
+                {currentFamily || "Unnamed Family"}
+              </span>
+              {isAdmin && currentFamilyId && (
+                <button
+                  onClick={() => {
+                    setEditNameValue(currentFamily || "");
+                    setShowEditNameModal(true);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "4px",
+                    borderRadius: "4px",
+                    color: "#64748b",
+                    fontSize: "16px",
+                    transition: "color 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.target.style.color = "#3b82f6")}
+                  onMouseLeave={(e) => (e.target.style.color = "#64748b")}
+                  title="Edit family name"
+                >
+                  ✏️
+                </button>
+              )}
+            </div>
+            <button className="control-btn" onClick={copyShareableLink}>
+              🔗 Copy Link
+            </button>
+            {currentFamilyId && (
+              <button
+                className="control-btn"
+                onClick={() => {
+                  if (!user) {
+                    alert("Please log in to delete family trees");
+                    return;
+                  }
+
+                  if (isAdmin) {
+                    setDeleteConfirmName("");
+                    setShowDeleteConfirmModal(true);
+                  } else {
+                    // Non-admin soft delete
+                    const confirmMessage = `Are you sure you want to remove "${currentFamily}" from your view? It will still be available to other members.`;
+                    if (!confirm(confirmMessage)) return;
+
+                    handleSoftDelete();
+                  }
+                }}
+              >
+                🗑️ {isAdmin ? "Delete for All" : "Remove from My View"}
+              </button>
+            )}
+            <button
+              className="control-btn"
+              onClick={() => setCurrentFamily(null)}
+            >
+              🏠 Family Menu
+            </button>
+          </div>
+          <div className="panel-section">
+            <h4>Export & Theme</h4>
+            <button
+              className="control-btn"
+              onClick={() => {
+                if (isPremium) {
+                  setShowPremiumChoiceModal(true);
+                } else {
+                  setShowExportModal(true);
+                }
+              }}
+            >
+              📷 Export PNG
+            </button>
+            <button className="control-btn" onClick={saveFamilyTree}>
+              💾 Save Family Tree
+            </button>
+            <button className="control-btn" onClick={toggleTheme}>
+              {theme === "light" ? "🌙 Dark" : "☀️ Light"}
+            </button>
+            {isPremium && (
+              <div
+                style={{
+                  marginTop: "8px",
+                  padding: "4px 6px",
+                  background:
+                    "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%)",
+                  borderRadius: "4px",
+                  border: "1px solid #f59e0b",
+                  fontSize: "10px",
+                  color: "#92400e",
+                  textAlign: "center",
+                  lineHeight: "1.2",
+                }}
+              >
+                <div style={{ fontWeight: "600" }}>👑 Premium Active</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Drawer - Messages */}
+      {user && (
+        <div
+          className={`drawer bottom-drawer ${showBottomDrawer ? "open" : ""}`}
+        >
+          <div className="drawer-header">
+            <h4>Messages</h4>
+            <button
+              className="drawer-close"
+              onClick={() => setShowBottomDrawer(false)}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="drawer-content">
+            <div style={{ padding: "8px" }}>
+              {messages.length === 0 ? (
+                <div
+                  style={{
+                    padding: "16px",
+                    textAlign: "center",
+                    color: "#64748b",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No new notifications
+                </div>
+              ) : (
+                messages.map((message: any) => (
+                  <div
+                    key={message.id}
+                    style={{
+                      padding: "12px",
+                      borderBottom: "1px solid #f1f5f9",
+                      background: message.is_read
+                        ? "rgba(255, 255, 255, 0.8)"
+                        : "rgba(59, 130, 246, 0.1)",
+                      borderRadius: "6px",
+                      marginBottom: "8px",
+                      borderLeft:
+                        message.message_type === "premium"
+                          ? "4px solid #f59e0b"
+                          : message.message_type === "welcome"
+                          ? "4px solid #10b981"
+                          : "4px solid #6b7280",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        color: "#1e293b",
+                        marginBottom: "4px",
+                        fontWeight: message.is_read ? "normal" : "600",
+                      }}
+                    >
+                      {message.message}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#64748b",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span>
+                        {new Date(message.created_at).toLocaleString()}
+                      </span>
+                      {message.family_name && (
+                        <span style={{ fontStyle: "italic" }}>
+                          {message.family_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Drawer - Admin Dashboard */}
+      {isAdmin && (
+        <div className={`drawer admin-drawer ${showAdminDrawer ? "open" : ""}`}>
+          <div className="drawer-header">
+            <h4>Admin Dashboard</h4>
+            <button
+              className="drawer-close"
+              onClick={() => setShowAdminDrawer(false)}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="drawer-content">
+            <AdminDashboard
+              currentFamily={currentFamily}
+              currentFamilyId={currentFamilyId}
+              accessCode={accessCode}
+              userId={userId || ""}
+              onRegenerateCode={regenerateAccessCode}
+              onAddAdmin={addAdminToFamily}
+              theme={theme}
+              compact={true}
+              showQuickAction={false}
+            />
+          </div>
+        </div>
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -3627,7 +3960,6 @@ const Flow = ({
             )}
           </div>
         </Panel>
-
         {/* Admin Dashboard as a draggable, resizable modal overlay */}
         {isAdmin && showAdminDashboard && (
           <Draggable handle=".admin-dashboard-modal-header">
