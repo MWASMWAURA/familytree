@@ -340,14 +340,27 @@ const FamilyTreeNode: React.FC<FamilyTreeNodeProps> = ({ data, id }) => {
                   <div className="node-details">{data.details}</div>
                 )}
               </>
-            ) : data.exportMode === "premium" && nodeImage ? (
+            ) : data.exportMode === "premium" ? (
               <div className="node-with-image">
                 <div
                   className="node-image"
                   style={{
-                    backgroundImage: `url(${nodeImage})`,
+                    backgroundImage: nodeImage
+                      ? `url(${nodeImage})`
+                      : undefined,
+                    background: nodeImage
+                      ? undefined
+                      : "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+                    width: "80px",
+                    height: "80px",
                   }}
-                ></div>
+                >
+                  {!nodeImage && (
+                    <span style={{ fontSize: "24px", color: "#6b7280" }}>
+                      ❓
+                    </span>
+                  )}
+                </div>
                 <div className="node-name">{data.name || data.label}</div>
               </div>
             ) : (

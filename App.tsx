@@ -3011,9 +3011,9 @@ const Flow = ({
           animated: false, // Disable animation
           style: {
             ...edge.style,
-            // Ensure visible stroke
-            stroke: edge.style?.stroke || "#b1b1b7",
-            strokeWidth: edge.style?.strokeWidth || 2,
+            // Ensure visible stroke - make edges more prominent for export
+            stroke: edge.style?.stroke || "#374151",
+            strokeWidth: 4, // Increased for better visibility in export
           },
         }));
 
