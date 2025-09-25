@@ -593,9 +593,9 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
       <div
         style={{
           background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-          padding: window.innerWidth <= 768 ? "16px" : "40px",
+          padding: window.innerWidth <= 1024 ? "16px" : "40px",
           borderRadius: "20px",
-          width: window.innerWidth <= 768 ? "280px" : "400px",
+          width: window.innerWidth <= 1024 ? "280px" : "400px",
           maxWidth: "90vw",
           textAlign: "center",
           boxShadow:
@@ -606,9 +606,9 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
       >
         <h2
           style={{
-            marginBottom: window.innerWidth <= 768 ? "20px" : "30px",
+            marginBottom: window.innerWidth <= 1024 ? "20px" : "30px",
             color: "#1e293b",
-            fontSize: window.innerWidth <= 768 ? "24px" : "28px",
+            fontSize: window.innerWidth <= 1024 ? "24px" : "28px",
             fontWeight: "700",
             letterSpacing: "-0.025em",
           }}
@@ -1455,7 +1455,7 @@ const ExportModal = ({
         <div
           style={{
             display: "flex",
-            flexDirection: window.innerWidth <= 768 ? "column" : "row",
+            flexDirection: window.innerWidth <= 1024 ? "column" : "row",
             gap: "15px",
             marginBottom: "20px",
           }}

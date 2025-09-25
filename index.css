@@ -251,7 +251,7 @@ body {
   min-width: 120px;
 }
 
-@media (max-device-width: 768px) {
+@media (max-device-width: 1024px) {
   .control-panel {
     padding: 6px;
     min-width: 100px;
@@ -274,7 +274,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-@media (max-device-width: 768px) {
+@media (max-device-width: 1024px) {
   .panel-section h4 {
     font-size: 9px;
     margin: 0 0 4px 0;
@@ -299,7 +299,7 @@ body {
   text-align: left;
 }
 
-@media (max-device-width: 768px) {
+@media (max-device-width: 1024px) {
   .control-btn {
     padding: 3px 5px;
     font-size: 9px;
@@ -328,7 +328,7 @@ body {
 }
 
 /* Mobile-specific adjustments for family nodes */
-@media (max-device-width: 768px) {
+@media (max-device-width: 1024px) {
   .family-node {
     min-width: 100px;
     min-height: 50px;
@@ -360,7 +360,7 @@ body {
 }
 
 /* Touch-friendly controls for mobile */
-@media (max-device-width: 768px) {
+@media (max-device-width: 1024px) {
   .control-panel {
     touch-action: manipulation;
   }
@@ -372,7 +372,7 @@ body {
 }
 
 /* Responsive layout adjustments */
-@media (max-device-width: 768px) {
+@media (max-device-width: 1024px) {
   .react-flow {
     touch-action: none;
   }
@@ -542,7 +542,7 @@ body {
   z-index: 1000;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
   .mobile-drawer-toggles {
     display: none;
   }
@@ -734,7 +734,7 @@ body {
 }
 
 /* Desktop Styles - Show panels normally */
-@media (min-width: 769px) and (min-device-width: 769px) {
+@media (min-width: 1025px) and (min-device-width: 1025px) {
   .drawer {
     display: none;
   }
@@ -750,7 +750,7 @@ body {
 }
 
 /* Mobile Styles - Hide original panels */
-@media (max-device-width: 768px) {
+@media (max-device-width: 1024px) {
   .react-flow__panel {
     display: none !important;
   }
