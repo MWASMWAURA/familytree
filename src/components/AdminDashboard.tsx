@@ -12,6 +12,7 @@ interface AdminDashboardProps {
   compact?: boolean;
   showQuickAction?: boolean;
   isModal?: boolean;
+  onCloseDrawer?: () => void;
 }
 
 interface GeneratedToken {
@@ -38,6 +39,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   compact,
   showQuickAction,
   isModal = true,
+  onCloseDrawer,
 }) => {
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [showAdminForm, setShowAdminForm] = useState(false);
@@ -545,9 +547,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   className="copy-btn"
                   style={{ fontSize: 14, padding: "2px 6px" }}
-                  onClick={() =>
-                    copyToClipboard(memberAccessLink, "Member access link")
-                  }
+                  onClick={() => {
+                    copyToClipboard(memberAccessLink, "Member access link");
+                    onCloseDrawer?.();
+                  }}
                   title="Copy member link"
                 >
                   📋
@@ -576,9 +579,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   className="copy-btn"
                   style={{ fontSize: 14, padding: "2px 6px" }}
-                  onClick={() =>
-                    copyToClipboard(adminAccessLink, "Admin access link")
-                  }
+                  onClick={() => {
+                    copyToClipboard(adminAccessLink, "Admin access link");
+                    onCloseDrawer?.();
+                  }}
                   title="Copy admin link"
                 >
                   📋
@@ -658,7 +662,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div style={{ marginBottom: 8 }}>
             <button
               className="generate-token-btn"
-              onClick={handleGenerateToken}
+              onClick={() => {
+                handleGenerateToken();
+                onCloseDrawer?.();
+              }}
               disabled={generatingToken}
               style={{
                 ...compactButtonStyles,
@@ -713,9 +720,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   className="copy-btn"
                   style={{ fontSize: 14, padding: "2px 6px" }}
-                  onClick={() =>
-                    copyToClipboard(generatedToken.token, "Access token")
-                  }
+                  onClick={() => {
+                    copyToClipboard(generatedToken.token, "Access token");
+                    onCloseDrawer?.();
+                  }}
                   title="Copy token"
                 >
                   📋
@@ -772,7 +780,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </pre>
                   <div style={{ marginTop: 4, display: "flex", gap: 4 }}>
                     <button
-                      onClick={() => handleUndo(log.id)}
+                      onClick={() => {
+                        handleUndo(log.id);
+                        onCloseDrawer?.();
+                      }}
                       style={{
                         fontSize: 10,
                         padding: "2px 6px",
@@ -786,7 +797,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       Undo
                     </button>
                     <button
-                      onClick={() => handleEdit(log)}
+                      onClick={() => {
+                        handleEdit(log);
+                        onCloseDrawer?.();
+                      }}
                       style={{
                         fontSize: 10,
                         padding: "2px 6px",

@@ -3396,22 +3396,52 @@ const Flow = ({
         <div className="drawer-content">
           <div className="panel-section">
             <h4>Layout</h4>
-            <button className="control-btn" onClick={() => onLayout("TB")}>
+            <button
+              className="control-btn"
+              onClick={() => {
+                onLayout("TB");
+                setShowLeftDrawer(false);
+              }}
+            >
               ↓ Vertical
             </button>
-            <button className="control-btn" onClick={() => onLayout("LR")}>
+            <button
+              className="control-btn"
+              onClick={() => {
+                onLayout("LR");
+                setShowLeftDrawer(false);
+              }}
+            >
               → Horizontal
             </button>
           </div>
           <div className="panel-section">
             <h4>View</h4>
-            <button className="control-btn" onClick={() => zoomIn()}>
+            <button
+              className="control-btn"
+              onClick={() => {
+                zoomIn();
+                setShowLeftDrawer(false);
+              }}
+            >
               🔍+ Zoom In
             </button>
-            <button className="control-btn" onClick={() => zoomOut()}>
+            <button
+              className="control-btn"
+              onClick={() => {
+                zoomOut();
+                setShowLeftDrawer(false);
+              }}
+            >
               🔍- Zoom Out
             </button>
-            <button className="control-btn" onClick={() => fitView()}>
+            <button
+              className="control-btn"
+              onClick={() => {
+                fitView();
+                setShowLeftDrawer(false);
+              }}
+            >
               📐 Fit View
             </button>
           </div>
@@ -3472,7 +3502,13 @@ const Flow = ({
                 </button>
               )}
             </div>
-            <button className="control-btn" onClick={copyShareableLink}>
+            <button
+              className="control-btn"
+              onClick={() => {
+                copyShareableLink();
+                setShowRightDrawer(false);
+              }}
+            >
               🔗 Copy Link
             </button>
             {currentFamilyId && (
@@ -3494,6 +3530,7 @@ const Flow = ({
 
                     handleSoftDelete();
                   }
+                  setShowRightDrawer(false);
                 }}
               >
                 🗑️ {isAdmin ? "Delete for All" : "Remove from My View"}
@@ -3501,7 +3538,10 @@ const Flow = ({
             )}
             <button
               className="control-btn"
-              onClick={() => setCurrentFamily(null)}
+              onClick={() => {
+                setCurrentFamily(null);
+                setShowRightDrawer(false);
+              }}
             >
               🏠 Family Menu
             </button>
@@ -3516,14 +3556,27 @@ const Flow = ({
                 } else {
                   setShowExportModal(true);
                 }
+                setShowRightDrawer(false);
               }}
             >
               📷 Export PNG
             </button>
-            <button className="control-btn" onClick={saveFamilyTree}>
+            <button
+              className="control-btn"
+              onClick={() => {
+                saveFamilyTree();
+                setShowRightDrawer(false);
+              }}
+            >
               💾 Save Family Tree
             </button>
-            <button className="control-btn" onClick={toggleTheme}>
+            <button
+              className="control-btn"
+              onClick={() => {
+                toggleTheme();
+                setShowRightDrawer(false);
+              }}
+            >
               {theme === "light" ? "🌙 Dark" : "☀️ Light"}
             </button>
             {isPremium && (
@@ -3655,6 +3708,7 @@ const Flow = ({
               compact={true}
               showQuickAction={false}
               isModal={false}
+              onCloseDrawer={() => setShowAdminDrawer(false)}
             />
           </div>
         </div>
