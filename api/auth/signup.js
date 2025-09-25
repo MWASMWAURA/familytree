@@ -46,6 +46,9 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    if (!process.env.DATABASE_URL && !process.env.CONNECTION_STRING) {
+      return res.status(500).json({ error: 'Database not configured. Please set DATABASE_URL environment variable.' });
+    }
     await initDb();
     const { email, password } = req.body;
 
