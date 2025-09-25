@@ -9,7 +9,7 @@ html, body {
 }
 
 /* Enable scrolling on mobile devices */
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   html, body {
     overflow-y: auto;
     overflow-x: hidden;
@@ -593,7 +593,7 @@ html, body {
 }
 
 /* Mobile Layout - Stack vertically */
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .auth-panel {
     top: 15px;
     right: 15px;
@@ -721,7 +721,7 @@ html, body {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .container {
     flex-direction: column;
   }

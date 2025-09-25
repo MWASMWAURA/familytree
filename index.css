@@ -251,7 +251,7 @@ body {
   min-width: 120px;
 }
 
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .control-panel {
     padding: 6px;
     min-width: 100px;
@@ -274,7 +274,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .panel-section h4 {
     font-size: 9px;
     margin: 0 0 4px 0;
@@ -299,7 +299,7 @@ body {
   text-align: left;
 }
 
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .control-btn {
     padding: 3px 5px;
     font-size: 9px;
@@ -328,31 +328,31 @@ body {
 }
 
 /* Mobile-specific adjustments for family nodes */
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .family-node {
     min-width: 100px;
     min-height: 50px;
     padding: 8px;
   }
-  
+
   .node-name {
     font-size: 12px;
   }
-  
+
   .node-details {
     font-size: 10px;
   }
-  
+
   .edit-hint {
     font-size: 8px;
   }
-  
+
   .add-button {
     width: 16px;
     height: 16px;
     font-size: 10px;
   }
-  
+
   .edit-input {
     font-size: 11px;
     padding: 3px 5px;
@@ -360,11 +360,11 @@ body {
 }
 
 /* Touch-friendly controls for mobile */
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .control-panel {
     touch-action: manipulation;
   }
-  
+
   .control-btn {
     min-height: 32px;
     touch-action: manipulation;
@@ -372,39 +372,39 @@ body {
 }
 
 /* Responsive layout adjustments */
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .react-flow {
     touch-action: none;
   }
-  
+
   /* Stack control panels vertically on mobile */
   .react-flow__panel-top-left,
   .react-flow__panel-top-right {
     position: fixed;
     top: 10px;
   }
-  
+
   .react-flow__panel-top-left {
     left: 10px;
     right: auto;
   }
-  
+
   .react-flow__panel-top-right {
     right: 10px;
     left: auto;
   }
-  
+
   .react-flow__panel-bottom-left,
   .react-flow__panel-bottom-right {
     position: fixed;
     bottom: 10px;
   }
-  
+
   .react-flow__panel-bottom-left {
     left: 10px;
     right: auto;
   }
-  
+
   .react-flow__panel-bottom-right {
     right: 10px;
     left: auto;
@@ -734,7 +734,7 @@ body {
 }
 
 /* Desktop Styles - Show panels normally */
-@media (min-width: 769px) {
+@media (min-width: 769px) and (min-device-width: 769px) {
   .drawer {
     display: none;
   }
@@ -750,7 +750,7 @@ body {
 }
 
 /* Mobile Styles - Hide original panels */
-@media (max-width: 768px) {
+@media (max-device-width: 768px) {
   .react-flow__panel {
     display: none !important;
   }
