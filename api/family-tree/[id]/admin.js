@@ -12,6 +12,66 @@ const getPool = () => {
   return pool;
 };
 
+// Initialize database
+const initDb = async () => {
+  try {
+    const pool = getPool();
+    // Users table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT UNIQUE,
+        password_hash TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // Family trees table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS family_trees (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        data JSONB NOT NULL,
+        admin_id UUID NOT NULL REFERENCES users(id),
+        access_code TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // Family admins table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS family_admins (
+        id SERIAL PRIMARY KEY,
+        family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id),
+        added_by UUID NOT NULL REFERENCES users(id),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(family_id, user_id)
+      );
+    `);
+
+    // Activity logs table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id SERIAL PRIMARY KEY,
+        family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id),
+        action TEXT NOT NULL,
+        details JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // Create indexes
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_family_trees_name ON family_trees(name);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_family_admins_family_id ON family_admins(family_id);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_activity_logs_family_id ON activity_logs(family_id);`);
+  } catch (err) {
+    console.error('Database initialization error:', err);
+  }
+};
+
 // Middleware to get or create user ID
 const getUserId = async (req) => {
   try {
