@@ -130,15 +130,15 @@
 .xy-theme__button-group {
   display: flex;
   align-items: center;
+}
 
-  .xy-theme__button:first-child {
-    border-radius: 100px 0 0 100px;
-  }
+.xy-theme__button-group .xy-theme__button:first-child {
+  border-radius: 100px 0 0 100px;
+}
 
-  .xy-theme__button:last-child {
-    border-radius: 0 100px 100px 0;
-    margin: 0;
-  }
+.xy-theme__button-group .xy-theme__button:last-child {
+  border-radius: 0 100px 100px 0;
+  margin: 0;
 }
 
 /* Custom Button Styling */
