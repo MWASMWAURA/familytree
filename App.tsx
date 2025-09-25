@@ -1128,6 +1128,192 @@ const DeleteConfirmModal = ({
   );
 };
 
+const PremiumExportChoiceModal = ({
+  isOpen,
+  onClose,
+  onExportPhoto,
+  onExportNode,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(8px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        animation: "fadeIn 0.3s ease-out",
+      }}
+    >
+      <div
+        style={{
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          padding: "30px",
+          borderRadius: "20px",
+          width: "400px",
+          maxWidth: "90vw",
+          textAlign: "center",
+          boxShadow:
+            "0 25px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8)",
+          border: "1px solid rgba(0, 0, 0, 0.05)",
+          animation: "slideUp 0.4s ease-out",
+        }}
+      >
+        <h2
+          style={{
+            marginBottom: "20px",
+            color: "#1e293b",
+            fontSize: "24px",
+            fontWeight: "700",
+            letterSpacing: "-0.025em",
+          }}
+        >
+          Choose Export Type
+        </h2>
+        <p style={{ marginBottom: "30px", color: "#64748b", fontSize: "16px" }}>
+          Select your preferred family tree export style
+        </p>
+
+        <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
+          {/* Photo Family Tree */}
+          <div
+            style={{
+              flex: 1,
+              padding: "20px",
+              border: "2px solid #fbbf24",
+              borderRadius: "12px",
+              background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%)",
+              transition: "all 0.3s ease",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = "translateY(-2px)";
+              e.target.style.boxShadow = "0 8px 25px rgba(251, 191, 36, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "none";
+            }}
+            onClick={() => {
+              onExportPhoto();
+              onClose();
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "10px" }}>📸</div>
+            <h3
+              style={{
+                margin: "0 0 10px 0",
+                color: "#92400e",
+                fontSize: "18px",
+                fontWeight: "600",
+              }}
+            >
+              Photo Family Tree
+            </h3>
+            <p style={{ margin: 0, color: "#92400e", fontSize: "14px" }}>
+              Premium export with photos
+            </p>
+          </div>
+
+          {/* Node Family Tree */}
+          <div
+            style={{
+              flex: 1,
+              padding: "20px",
+              border: "2px solid #e2e8f0",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.8)",
+              transition: "all 0.3s ease",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = "#3b82f6";
+              e.target.style.transform = "translateY(-2px)";
+              e.target.style.boxShadow = "0 8px 25px rgba(59, 130, 246, 0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = "#e2e8f0";
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "none";
+            }}
+            onClick={() => {
+              onExportNode();
+              onClose();
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "10px" }}>📄</div>
+            <h3
+              style={{
+                margin: "0 0 10px 0",
+                color: "#1e293b",
+                fontSize: "18px",
+                fontWeight: "600",
+              }}
+            >
+              Node Family Tree
+            </h3>
+            <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>
+              Standard export with nodes
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "12px 24px",
+              background: "#f1f5f9",
+              color: "#64748b",
+              border: "1px solid #e2e8f0",
+              borderRadius: "8px",
+              fontSize: "14px",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "#e2e8f0";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "#f1f5f9";
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px) scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
 const ExportModal = ({
   isOpen,
   onClose,
@@ -1136,6 +1322,7 @@ const ExportModal = ({
   isPremium,
   onActivatePremium,
   isActivating,
+  onShowPremiumChoice,
 }) => {
   const [showStkPrompt, setShowStkPrompt] = useState(false);
   const [stkStep, setStkStep] = useState(0); // 0: phone input, 1: processing, 2: success
@@ -1154,8 +1341,9 @@ const ExportModal = ({
       setShowStkPrompt(true);
       setStkStep(0);
     } else {
-      onExportPremium();
-      onClose(); // Auto-close modal after premium export
+      // For premium users, show choice modal instead of direct export
+      onShowPremiumChoice();
+      onClose();
     }
   };
 
@@ -1612,6 +1800,8 @@ const Flow = ({
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] =
     useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [showPremiumChoiceModal, setShowPremiumChoiceModal] =
+    useState<boolean>(false);
   const [editNameValue, setEditNameValue] = useState<string>("");
   const [deleteConfirmName, setDeleteConfirmName] = useState<string>("");
   const [isPremium, setIsPremium] = useState<boolean>(false);
@@ -2754,6 +2944,14 @@ const Flow = ({
   const exportAsImage = useCallback(
     async (premium = false) => {
       try {
+        // First, ensure nodes are in their original state (restore from any previous premium export)
+        const nodeElements = document.querySelectorAll(".family-node");
+        nodeElements.forEach((nodeEl) => {
+          if ((nodeEl as any)._originalContent) {
+            nodeEl.innerHTML = (nodeEl as any)._originalContent;
+          }
+        });
+
         // Hide UI elements temporarily
         const controlPanels = document.querySelectorAll(".control-panel");
         const adminDashboard = document.querySelector(".admin-dashboard-modal");
@@ -3149,6 +3347,23 @@ const Flow = ({
           isPremium={isPremium}
           onActivatePremium={activatePremium}
           isActivating={isActivatingPremium}
+          onShowPremiumChoice={() => setShowPremiumChoiceModal(true)}
+        />
+      )}
+
+      {/* Premium Export Choice Modal */}
+      {showPremiumChoiceModal && (
+        <PremiumExportChoiceModal
+          isOpen={showPremiumChoiceModal}
+          onClose={() => setShowPremiumChoiceModal(false)}
+          onExportPhoto={() => {
+            exportAsImage(true);
+            setShowPremiumChoiceModal(false);
+          }}
+          onExportNode={() => {
+            exportAsImage(false);
+            setShowPremiumChoiceModal(false);
+          }}
         />
       )}
 
@@ -3429,7 +3644,13 @@ const Flow = ({
             <h4>Export & Theme</h4>
             <button
               className="control-btn"
-              onClick={() => setShowExportModal(true)}
+              onClick={() => {
+                if (isPremium) {
+                  setShowPremiumChoiceModal(true);
+                } else {
+                  setShowExportModal(true);
+                }
+              }}
             >
               📷 Export PNG
             </button>
