@@ -117,9 +117,20 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
     spouseNodeIds.add(edge.target);
   });
 
-  // Add only non-spouse nodes to dagre for hierarchy layout
+  // Determine which nodes have non-spouse edges
+  const nodesWithNonSpouseEdges = new Set();
+  hierarchyEdges.forEach((edge) => {
+    nodesWithNonSpouseEdges.add(edge.source);
+    nodesWithNonSpouseEdges.add(edge.target);
+  });
+
+  // Add nodes to dagre for hierarchy layout
   const hierarchyNodes = nodes.filter((node) => {
-    // If it's connected by spouse edge, only include one of the pair in hierarchy
+    // Include nodes that have non-spouse edges
+    if (nodesWithNonSpouseEdges.has(node.id)) {
+      return true;
+    }
+    // For nodes without non-spouse edges, use spouse logic
     const spouseEdge = spouseEdges.find(
       (edge) => edge.source === node.id || edge.target === node.id
     );
@@ -154,41 +165,54 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
   const newNodes = nodes.map((node) => {
     let adjustedX, adjustedY;
 
-    // Check if this node is a spouse
-    const spouseEdge = spouseEdges.find(
-      (edge) => edge.source === node.id || edge.target === node.id
-    );
-
-    if (spouseEdge && spouseEdge.target === node.id) {
-      // This is a spouse node (target), position it next to its partner (source)
-      const partnerId = spouseEdge.source;
-      const partnerPosition = layoutGraph.node(partnerId);
-
-      if (partnerPosition) {
-        if (isHorizontal) {
-          // Horizontal layout: place spouse below partner with more spacing
-          adjustedX = partnerPosition.x - nodeWidth / 2;
-          adjustedY = partnerPosition.y + nodeHeight + 40; // More space below partner for horizontal
-        } else {
-          // Vertical layout: place spouse to the right of partner
-          adjustedX = partnerPosition.x + nodeWidth + 18; // More space to the right of partner
-          adjustedY = partnerPosition.y - nodeHeight / 2;
-        }
-      } else {
-        // Fallback position
-        adjustedX = 0;
-        adjustedY = 0;
-      }
-    } else {
-      // Regular node or spouse source, use dagre position
+    // If node has non-spouse edges, use dagre position
+    if (nodesWithNonSpouseEdges.has(node.id)) {
       const nodePosition = layoutGraph.node(node.id);
       if (nodePosition) {
         adjustedX = nodePosition.x - nodeWidth / 2;
         adjustedY = nodePosition.y - nodeHeight / 2;
       } else {
-        // Fallback for nodes not in dagre (shouldn't happen)
+        // Fallback for nodes not in dagre
         adjustedX = 0;
         adjustedY = 0;
+      }
+    } else {
+      // Check if this node is a spouse target without non-spouse edges
+      const spouseEdge = spouseEdges.find(
+        (edge) => edge.source === node.id || edge.target === node.id
+      );
+
+      if (spouseEdge && spouseEdge.target === node.id) {
+        // This is a spouse node (target), position it next to its partner (source)
+        const partnerId = spouseEdge.source;
+        const partnerPosition = layoutGraph.node(partnerId);
+
+        if (partnerPosition) {
+          if (isHorizontal) {
+            // Horizontal layout: place spouse below partner with more spacing
+            adjustedX = partnerPosition.x - nodeWidth / 2;
+            adjustedY = partnerPosition.y + nodeHeight + 40; // More space below partner for horizontal
+          } else {
+            // Vertical layout: place spouse to the right of partner
+            adjustedX = partnerPosition.x + nodeWidth + 18; // More space to the right of partner
+            adjustedY = partnerPosition.y - nodeHeight / 2;
+          }
+        } else {
+          // Fallback position
+          adjustedX = 0;
+          adjustedY = 0;
+        }
+      } else {
+        // Regular node or spouse source, use dagre position
+        const nodePosition = layoutGraph.node(node.id);
+        if (nodePosition) {
+          adjustedX = nodePosition.x - nodeWidth / 2;
+          adjustedY = nodePosition.y - nodeHeight / 2;
+        } else {
+          // Fallback for nodes not in dagre
+          adjustedX = 0;
+          adjustedY = 0;
+        }
       }
     }
 
@@ -2546,6 +2570,10 @@ const Flow = ({
     setNextNodeId((prev) => {
       const newParentId = `parent-${prev}`;
 
+      // Find child node to position parent at it initially for immediate edge connection
+      const childNode = nodes.find((node) => node.id === nodeId);
+      const parentPosition = childNode ? childNode.position : { x: 0, y: 0 };
+
       const newParentNode = {
         id: newParentId,
         type: "familyNode",
@@ -2553,7 +2581,7 @@ const Flow = ({
           name: "New Parent",
           details: "Double-click to edit",
         },
-        position: { x: 0, y: 0 },
+        position: parentPosition,
       };
 
       const newEdge = {
@@ -2590,6 +2618,10 @@ const Flow = ({
     setNextNodeId((prev) => {
       const newChildId = `child-${prev}`;
 
+      // Find parent node to position child at it initially for immediate edge connection
+      const parentNode = nodes.find((node) => node.id === nodeId);
+      const childPosition = parentNode ? parentNode.position : { x: 0, y: 0 };
+
       const newChildNode = {
         id: newChildId,
         type: "familyNode",
@@ -2597,7 +2629,7 @@ const Flow = ({
           name: "New Child",
           details: "Double-click to edit",
         },
-        position: { x: 0, y: 0 },
+        position: childPosition,
       };
 
       const newEdge = {
@@ -2615,10 +2647,10 @@ const Flow = ({
 
         setNodes((currentNodes) => {
           const updatedNodes = [...currentNodes, newChildNode];
-          const { nodes: layoutedNodes, edges: layoutedEdges } =
-            getLayoutedElements(updatedNodes, updatedEdges);
-          // updated edges with the layout edges
-          setEdges(layoutedEdges);
+          const { nodes: layoutedNodes } = getLayoutedElements(
+            updatedNodes,
+            updatedEdges
+          );
           return addCallbacksToNodes(layoutedNodes);
         });
 
@@ -2633,6 +2665,12 @@ const Flow = ({
     setNextNodeId((prev) => {
       const newSpouseId = `spouse-${prev}`;
 
+      // Find partner node to position spouse at it initially for immediate edge connection
+      const partnerNode = nodes.find((node) => node.id === nodeId);
+      const spousePosition = partnerNode
+        ? partnerNode.position
+        : { x: 0, y: 0 };
+
       const newSpouseNode = {
         id: newSpouseId,
         type: "familyNode",
@@ -2640,7 +2678,7 @@ const Flow = ({
           name: "Spouse",
           details: "Double-click to edit",
         },
-        position: { x: 0, y: 0 },
+        position: spousePosition,
       };
 
       const newEdge = {
@@ -2663,10 +2701,10 @@ const Flow = ({
 
         setNodes((currentNodes) => {
           const updatedNodes = [...currentNodes, newSpouseNode];
-          const { nodes: layoutedNodes, edges: layoutedEdges } =
-            getLayoutedElements(updatedNodes, updatedEdges);
-          // updated edges with the layout edges
-          setEdges(layoutedEdges);
+          const { nodes: layoutedNodes } = getLayoutedElements(
+            updatedNodes,
+            updatedEdges
+          );
           return addCallbacksToNodes(layoutedNodes);
         });
 
