@@ -16,7 +16,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 const crypto = require('crypto');
 const { generateToken, validateAccessToken } = require('./token-feature');
@@ -145,6 +146,48 @@ const initDb = async () => {
       family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE(user_id, family_id)
+    );
+  `);
+
+  // Premium status table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_premium_status (
+      id SERIAL PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(id),
+      family_id INTEGER REFERENCES family_trees(id) ON DELETE CASCADE,
+      is_premium BOOLEAN NOT NULL DEFAULT FALSE,
+      payment_reference TEXT,
+      activated_at TIMESTAMPTZ DEFAULT NOW(),
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, family_id)
+    );
+  `);
+
+  // Node images table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS node_images (
+      id SERIAL PRIMARY KEY,
+      node_id TEXT NOT NULL,
+      family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL REFERENCES users(id),
+      image_data TEXT NOT NULL, -- Base64 encoded image
+      image_name TEXT,
+      uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(node_id, family_id)
+    );
+  `);
+
+  // Messages table with read status
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id SERIAL PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(id),
+      family_id INTEGER REFERENCES family_trees(id),
+      message TEXT NOT NULL,
+      message_type TEXT NOT NULL DEFAULT 'info',
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
 
@@ -307,6 +350,12 @@ app.post('/api/family-tree', getUserId, async (req, res) => {
       [result.rows[0].id, userId, userId]
     );
 
+    // Add welcome message for new admin
+    await pool.query(`
+      INSERT INTO messages (user_id, family_id, message, message_type)
+      VALUES ($1, $2, $3, $4)
+    `, [userId, result.rows[0].id, `Welcome! You are now the admin of "${name}" family tree. Share the access code with family members to collaborate.`, 'welcome']);
+
     res.status(201).json({ family: result.rows[0], accessCode: code });
   } catch (err) {
     console.error('Failed to save family tree:', err);
@@ -412,20 +461,37 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    // Get messages from activity logs where user is affected
-    const result = await pool.query(`
+    // Get messages from both messages table and activity logs
+    const messagesResult = await pool.query(`
+      SELECT
+        id,
+        message,
+        message_type,
+        family_id,
+        is_read,
+        created_at,
+        ft.name as family_name
+      FROM messages m
+      LEFT JOIN family_trees ft ON m.family_id = ft.id
+      WHERE m.user_id = $1
+      ORDER BY created_at DESC
+    `, [userId]);
+
+    // Get activity log messages where user is affected
+    const activityResult = await pool.query(`
       SELECT
         al.id,
-        al.action,
-        al.details,
-        al.created_at,
-        ft.name as family_name,
         CASE
-          WHEN al.action = 'change_name' THEN 'Family name was changed'
+          WHEN al.action = 'change_name' THEN 'Family name was changed for "' || ft.name || '"'
           WHEN al.action = 'delete_family' THEN 'A family was deleted by admin'
           WHEN al.action = 'regenerate_code' THEN 'Access code for "' || ft.name || '" was changed'
           ELSE al.action
-        END as message
+        END as message,
+        'activity' as message_type,
+        al.family_id,
+        true as is_read,
+        al.created_at,
+        ft.name as family_name
       FROM activity_logs al
       JOIN family_trees ft ON al.family_id = ft.id
       LEFT JOIN family_admins fa ON ft.id = fa.family_id AND fa.user_id = $1
@@ -433,13 +499,41 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
         AND al.user_id != $1
         AND al.action IN ('change_name', 'delete_family', 'regenerate_code')
       ORDER BY al.created_at DESC
-      LIMIT 50
+      LIMIT 20
     `, [userId]);
 
-    res.json(result.rows);
+    // Combine and sort messages
+    const allMessages = [...messagesResult.rows, ...activityResult.rows]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 50);
+
+    res.json(allMessages);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// Endpoint to mark messages as read
+app.post('/api/messages/mark-read', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  const { messageIds } = req.body;
+
+  if (!messageIds || !Array.isArray(messageIds)) {
+    return res.status(400).json({ error: 'messageIds array is required' });
+  }
+
+  try {
+    await pool.query(`
+      UPDATE messages
+      SET is_read = true
+      WHERE user_id = $1 AND id = ANY($2)
+    `, [userId, messageIds]);
+
+    res.json({ success: true, message: 'Messages marked as read' });
+  } catch (err) {
+    console.error('Error marking messages as read:', err);
+    res.status(500).json({ error: 'Failed to mark messages as read' });
   }
 });
 
@@ -794,6 +888,175 @@ app.post('/api/family-tree/:id/undo/:logId', getUserId, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to undo action' });
+  }
+});
+
+// Premium status endpoints
+app.get('/api/premium/status', getUserId, async (req, res) => {
+  const userId = req.userId;
+  const { familyId } = req.query;
+
+  try {
+    let query = 'SELECT * FROM user_premium_status WHERE user_id = $1';
+    let params = [userId];
+
+    if (familyId) {
+      query += ' AND family_id = $2';
+      params.push(familyId);
+    }
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error checking premium status:', err);
+    res.status(500).json({ error: 'Failed to check premium status' });
+  }
+});
+
+// Activate premium (M-Pesa payment simulation)
+app.post('/api/premium/activate', getUserId, async (req, res) => {
+  const userId = req.userId;
+  const { familyId, paymentMethod } = req.body;
+
+  if (!familyId) {
+    return res.status(400).json({ error: 'Family ID is required' });
+  }
+
+  try {
+    // Simulate M-Pesa payment (in production, integrate with actual M-Pesa API)
+    const paymentReference = `MPESA-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // For demo purposes, we'll auto-approve the payment
+    // In production, you'd wait for M-Pesa confirmation
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1); // 1 year subscription
+
+    await pool.query(`
+      INSERT INTO user_premium_status (user_id, family_id, is_premium, payment_reference, expires_at)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (user_id, family_id)
+      DO UPDATE SET
+        is_premium = EXCLUDED.is_premium,
+        payment_reference = EXCLUDED.payment_reference,
+        activated_at = NOW(),
+        expires_at = EXCLUDED.expires_at
+    `, [userId, familyId, true, paymentReference, expiresAt]);
+
+    // Add premium activation message
+    await pool.query(`
+      INSERT INTO messages (user_id, family_id, message, message_type)
+      VALUES ($1, $2, $3, $4)
+    `, [userId, familyId, `🎉 Premium activated! You can now upload photos for family members. Double-click on any node to add their photo.`, 'premium']);
+
+    res.json({
+      success: true,
+      message: 'Premium activated successfully',
+      paymentReference,
+      expiresAt
+    });
+  } catch (err) {
+    console.error('Error activating premium:', err);
+    res.status(500).json({ error: 'Failed to activate premium' });
+  }
+});
+
+// Node image endpoints
+app.post('/api/node-image', getUserId, async (req, res) => {
+  const userId = req.userId;
+  const { nodeId, familyId, imageData, imageName } = req.body;
+
+  if (!nodeId || !familyId || !imageData) {
+    return res.status(400).json({ error: 'Missing required fields: nodeId, familyId, imageData' });
+  }
+
+  try {
+    // Check if user has premium for this family
+    const premiumCheck = await pool.query(`
+      SELECT * FROM user_premium_status
+      WHERE user_id = $1 AND family_id = $2 AND is_premium = true
+      AND (expires_at IS NULL OR expires_at > NOW())
+    `, [userId, familyId]);
+
+    if (premiumCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Premium subscription required to upload images' });
+    }
+
+    // Insert or update node image
+    await pool.query(`
+      INSERT INTO node_images (node_id, family_id, user_id, image_data, image_name)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (node_id, family_id)
+      DO UPDATE SET
+        image_data = EXCLUDED.image_data,
+        image_name = EXCLUDED.image_name,
+        uploaded_at = NOW()
+    `, [nodeId, familyId, userId, imageData, imageName]);
+
+    res.json({ success: true, message: 'Image uploaded successfully' });
+  } catch (err) {
+    console.error('Error uploading image:', err);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+app.get('/api/node-image/:familyId/:nodeId', getUserId, async (req, res) => {
+  const userId = req.userId;
+  const { familyId, nodeId } = req.params;
+
+  try {
+    // Check if user has access to this family
+    const accessCheck = await pool.query(`
+      SELECT ft.*, fa.user_id as admin_user_id
+      FROM family_trees ft
+      LEFT JOIN family_admins fa ON ft.id = fa.family_id AND fa.user_id = $1
+      WHERE ft.id = $2
+    `, [userId, familyId]);
+
+    if (accessCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await pool.query(`
+      SELECT * FROM node_images
+      WHERE node_id = $1 AND family_id = $2
+    `, [nodeId, familyId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching image:', err);
+    res.status(500).json({ error: 'Failed to fetch image' });
+  }
+});
+
+app.delete('/api/node-image/:familyId/:nodeId', getUserId, async (req, res) => {
+  const userId = req.userId;
+  const { familyId, nodeId } = req.params;
+
+  try {
+    // Check if user has premium for this family
+    const premiumCheck = await pool.query(`
+      SELECT * FROM user_premium_status
+      WHERE user_id = $1 AND family_id = $2 AND is_premium = true
+      AND (expires_at IS NULL OR expires_at > NOW())
+    `, [userId, familyId]);
+
+    if (premiumCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Premium subscription required' });
+    }
+
+    await pool.query(`
+      DELETE FROM node_images
+      WHERE node_id = $1 AND family_id = $2 AND user_id = $3
+    `, [nodeId, familyId, userId]);
+
+    res.json({ success: true, message: 'Image deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting image:', err);
+    res.status(500).json({ error: 'Failed to delete image' });
   }
 });
 

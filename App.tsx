@@ -1128,6 +1128,455 @@ const DeleteConfirmModal = ({
   );
 };
 
+const ExportModal = ({
+  isOpen,
+  onClose,
+  onExportFree,
+  onExportPremium,
+  isPremium,
+  onActivatePremium,
+  isActivating,
+}) => {
+  const [showStkPrompt, setShowStkPrompt] = useState(false);
+  const [stkStep, setStkStep] = useState(0); // 0: phone input, 1: processing, 2: success
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  if (!isOpen) return null;
+
+  const handleFreeExport = () => {
+    onExportFree();
+    onClose(); // Auto-close modal after free export
+  };
+
+  const handlePremiumExport = async () => {
+    if (!isPremium) {
+      // Show STK push simulation
+      setShowStkPrompt(true);
+      setStkStep(0);
+    } else {
+      onExportPremium();
+      onClose(); // Auto-close modal after premium export
+    }
+  };
+
+  const handleStkSubmit = () => {
+    if (!phoneNumber.trim()) {
+      alert("Please enter your phone number");
+      return;
+    }
+
+    // Validate phone number format (basic validation)
+    const phoneRegex = /^(\+254|0)[17]\d{8}$/;
+    if (!phoneRegex.test(phoneNumber.trim())) {
+      alert(
+        "Please enter a valid Kenyan phone number (e.g., +254712345678 or 0712345678)"
+      );
+      return;
+    }
+
+    setStkStep(1); // Processing payment
+
+    // Simulate payment success after 3 seconds
+    setTimeout(async () => {
+      setStkStep(2); // Payment successful
+      await onActivatePremium();
+
+      // Show success message and close STK prompt
+      setTimeout(() => {
+        setShowStkPrompt(false);
+        setPhoneNumber("");
+        alert(
+          "🎉 Premium activated! You can now upload photos of family members by double-clicking on nodes, then export your premium family tree."
+        );
+      }, 1000);
+    }, 3000);
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(8px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        animation: "fadeIn 0.3s ease-out",
+      }}
+    >
+      <div
+        style={{
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          padding: "30px",
+          borderRadius: "20px",
+          width: "500px",
+          maxWidth: "90vw",
+          textAlign: "center",
+          boxShadow:
+            "0 25px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8)",
+          border: "1px solid rgba(0, 0, 0, 0.05)",
+          animation: "slideUp 0.4s ease-out",
+        }}
+      >
+        <h2
+          style={{
+            marginBottom: "20px",
+            color: "#1e293b",
+            fontSize: "28px",
+            fontWeight: "700",
+            letterSpacing: "-0.025em",
+          }}
+        >
+          Export Family Tree
+        </h2>
+        <p style={{ marginBottom: "30px", color: "#64748b", fontSize: "16px" }}>
+          Choose your export option
+        </p>
+
+        <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
+          {/* Free Export */}
+          <div
+            style={{
+              flex: 1,
+              padding: "20px",
+              border: "2px solid #e2e8f0",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.8)",
+              transition: "all 0.3s ease",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = "#3b82f6";
+              e.target.style.transform = "translateY(-2px)";
+              e.target.style.boxShadow = "0 8px 25px rgba(59, 130, 246, 0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = "#e2e8f0";
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "none";
+            }}
+            onClick={onExportFree}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "10px" }}>📄</div>
+            <h3
+              style={{
+                margin: "0 0 10px 0",
+                color: "#1e293b",
+                fontSize: "20px",
+                fontWeight: "600",
+              }}
+            >
+              Free Export
+            </h3>
+            <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>
+              Export with standard nodes and text
+            </p>
+            <div
+              style={{
+                marginTop: "15px",
+                fontSize: "18px",
+                fontWeight: "bold",
+                color: "#10b981",
+              }}
+            >
+              FREE
+            </div>
+          </div>
+
+          {/* Premium Export */}
+          <div
+            style={{
+              flex: 1,
+              padding: "20px",
+              border: "2px solid #fbbf24",
+              borderRadius: "12px",
+              background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%)",
+              transition: "all 0.3s ease",
+              cursor: "pointer",
+              position: "relative",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = "translateY(-2px)";
+              e.target.style.boxShadow = "0 8px 25px rgba(251, 191, 36, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "none";
+            }}
+            onClick={handlePremiumExport}
+            disabled={isActivating}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "-10px",
+                right: "-10px",
+                background: "#f59e0b",
+                color: "white",
+                borderRadius: "50%",
+                width: "30px",
+                height: "30px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "16px",
+                fontWeight: "bold",
+              }}
+            >
+              👑
+            </div>
+            <div style={{ fontSize: "48px", marginBottom: "10px" }}>📸</div>
+            <h3
+              style={{
+                margin: "0 0 10px 0",
+                color: "#92400e",
+                fontSize: "20px",
+                fontWeight: "600",
+              }}
+            >
+              Premium Export
+            </h3>
+            <p style={{ margin: 0, color: "#92400e", fontSize: "14px" }}>
+              Export with round photos and names
+            </p>
+            <div
+              style={{
+                marginTop: "15px",
+                fontSize: "18px",
+                fontWeight: "bold",
+                color: "#dc2626",
+              }}
+            >
+              KSH 20
+            </div>
+            {isPremium && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  fontSize: "12px",
+                  color: "#059669",
+                  fontWeight: "600",
+                }}
+              >
+                ✓ Premium Active
+              </div>
+            )}
+            {isActivating && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  fontSize: "12px",
+                  color: "#f59e0b",
+                  fontWeight: "600",
+                }}
+              >
+                🔄 Activating Premium...
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "12px 24px",
+              background: "#f1f5f9",
+              color: "#64748b",
+              border: "1px solid #e2e8f0",
+              borderRadius: "8px",
+              fontSize: "14px",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "#e2e8f0";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "#f1f5f9";
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      {/* STK Push Modal */}
+      {showStkPrompt && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.8)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+            animation: "fadeIn 0.3s ease-out",
+          }}
+        >
+          <div
+            style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+              padding: "40px",
+              borderRadius: "20px",
+              width: "400px",
+              maxWidth: "90vw",
+              textAlign: "center",
+              boxShadow:
+                "0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.8)",
+              border: "1px solid rgba(0, 0, 0, 0.05)",
+              animation: "slideUp 0.4s ease-out",
+            }}
+          >
+            <div style={{ fontSize: "60px", marginBottom: "20px" }}>📱</div>
+            <h2
+              style={{
+                marginBottom: "20px",
+                color: "#1e293b",
+                fontSize: "24px",
+                fontWeight: "700",
+              }}
+            >
+              M-Pesa Payment
+            </h2>
+
+            {stkStep === 0 && (
+              <div>
+                <p
+                  style={{
+                    marginBottom: "20px",
+                    color: "#64748b",
+                    fontSize: "16px",
+                  }}
+                >
+                  Enter your M-Pesa phone number to pay KSH 20
+                </p>
+                <div style={{ marginBottom: "20px", width: "100%" }}>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="e.g., +254712345678 or 0712345678"
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      fontFamily: "inherit",
+                      background: "rgba(255, 255, 255, 0.9)",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <button
+                  onClick={handleStkSubmit}
+                  style={{
+                    width: "100%",
+                    padding: "12px 24px",
+                    background:
+                      "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = "translateY(-1px)";
+                    e.target.style.boxShadow =
+                      "0 4px 12px rgba(5, 150, 105, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = "translateY(0)";
+                    e.target.style.boxShadow = "none";
+                  }}
+                >
+                  Pay KSH 20
+                </button>
+              </div>
+            )}
+
+            {stkStep === 1 && (
+              <div>
+                <p
+                  style={{
+                    marginBottom: "20px",
+                    color: "#64748b",
+                    fontSize: "16px",
+                  }}
+                >
+                  Check your phone and enter your M-Pesa PIN
+                </p>
+                <div style={{ fontSize: "40px", marginBottom: "10px" }}>📲</div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "#059669",
+                    fontWeight: "600",
+                  }}
+                >
+                  Processing payment of KSH 20...
+                </div>
+              </div>
+            )}
+
+            {stkStep === 2 && (
+              <div>
+                <p
+                  style={{
+                    marginBottom: "20px",
+                    color: "#059669",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                  }}
+                >
+                  ✅ Payment successful!
+                </p>
+                <div style={{ fontSize: "40px" }}>🎉</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px) scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
 const Flow = ({
   user,
   token,
@@ -1158,11 +1607,16 @@ const Flow = ({
     useState<boolean>(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [showMessagesPanel, setShowMessagesPanel] = useState<boolean>(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState<number>(0);
   const [showEditNameModal, setShowEditNameModal] = useState<boolean>(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] =
     useState<boolean>(false);
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [editNameValue, setEditNameValue] = useState<string>("");
   const [deleteConfirmName, setDeleteConfirmName] = useState<string>("");
+  const [isPremium, setIsPremium] = useState<boolean>(false);
+  const [isActivatingPremium, setIsActivatingPremium] =
+    useState<boolean>(false);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -1221,6 +1675,39 @@ const Flow = ({
       loadMessages();
     }
   }, [user, token]);
+
+  // Update unread count when messages change
+  useEffect(() => {
+    const unreadCount = messages.filter((msg) => !msg.is_read).length;
+    setUnreadMessageCount(unreadCount);
+  }, [messages]);
+
+  // Function to mark messages as read
+  const markMessagesAsRead = async (messageIds: number[]) => {
+    if (!user || !token || messageIds.length === 0) return;
+
+    try {
+      const response = await fetch("/api/messages/mark-read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ messageIds }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            messageIds.includes(msg.id) ? { ...msg, is_read: true } : msg
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  };
 
   // Real-time sync for shared family trees
   const checkForUpdates = async () => {
@@ -1428,6 +1915,106 @@ const Flow = ({
       loadPersistedFamily();
     }
   }, [userId]);
+
+  // Check premium status when family changes
+  const checkPremiumStatus = async () => {
+    if (!userId || !currentFamilyId) {
+      setIsPremium(false);
+      return;
+    }
+
+    try {
+      const headers: any = { "X-User-ID": userId };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/premium/status?familyId=${currentFamilyId}`,
+        {
+          headers,
+        }
+      );
+
+      if (response.ok) {
+        const premiumData = await response.json();
+        const hasPremium = premiumData.some(
+          (p: any) =>
+            p.is_premium &&
+            (!p.expires_at || new Date(p.expires_at) > new Date())
+        );
+        setIsPremium(hasPremium);
+      }
+    } catch (error) {
+      console.error("Error checking premium status:", error);
+      setIsPremium(false);
+    }
+  };
+
+  // Check premium status when family changes
+  useEffect(() => {
+    checkPremiumStatus();
+  }, [currentFamilyId, userId, token]);
+
+  // Update nodes when premium status changes
+  useEffect(() => {
+    if (nodes.length > 0) {
+      setNodes(addCallbacksToNodes(nodes));
+    }
+  }, [isPremium]);
+
+  // Activate premium
+  const activatePremium = async () => {
+    if (!userId || !currentFamilyId) {
+      alert("User not authenticated or no family selected");
+      return;
+    }
+
+    setIsActivatingPremium(true);
+    try {
+      const headers: any = {
+        "Content-Type": "application/json",
+        "X-User-ID": userId,
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/premium/activate`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          familyId: currentFamilyId,
+          paymentMethod: "mpesa",
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(
+          `Premium activated successfully! Payment reference: ${result.paymentReference}`
+        );
+        setIsPremium(true);
+
+        // Add premium activation message to messages panel
+        const premiumMessage = {
+          id: `premium-${Date.now()}`,
+          message:
+            "🎉 Premium subscription activated! You can now upload photos of family members by double-clicking on nodes.",
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [premiumMessage, ...prev]);
+      } else {
+        const error = await response.json();
+        alert(`Failed to activate premium: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error activating premium:", error);
+      alert("Failed to activate premium. Please try again.");
+    } finally {
+      setIsActivatingPremium(false);
+    }
+  };
   // Function to save current family tree to server
   const saveFamilyTree = async () => {
     if (!currentFamily || !userId) {
@@ -1714,6 +2301,10 @@ const Flow = ({
         onAddChild: handleAddChild,
         onAddSpouse: handleAddSpouse,
         onUpdateNode: handleUpdateNode,
+        isPremium,
+        familyId: currentFamilyId,
+        userId,
+        token,
       },
     }));
   };
@@ -2160,168 +2751,302 @@ const Flow = ({
     [nodes, edges]
   );
 
-  const exportAsImage = useCallback(async () => {
-    try {
-      // Hide UI elements temporarily
-      const controlPanels = document.querySelectorAll(".control-panel");
-      const adminDashboard = document.querySelector(".admin-dashboard-modal");
-      const attribution = document.querySelector(".react-flow__attribution");
+  const exportAsImage = useCallback(
+    async (premium = false) => {
+      try {
+        // Hide UI elements temporarily
+        const controlPanels = document.querySelectorAll(".control-panel");
+        const adminDashboard = document.querySelector(".admin-dashboard-modal");
+        const attribution = document.querySelector(".react-flow__attribution");
 
-      const originalDisplays = Array.from(controlPanels).map(
-        (panel) => panel.style.display
-      );
-      const originalAdminDisplay = adminDashboard?.style.display;
-      const originalAttributionDisplay = attribution?.style.display;
-
-      // Hide elements
-      controlPanels.forEach((panel) => {
-        panel.style.display = "none";
-      });
-      if (adminDashboard) {
-        adminDashboard.style.display = "none";
-      }
-      if (attribution) {
-        attribution.style.display = "none";
-      }
-
-      // CRITICAL: Temporarily disable animations and fix edge styles for export
-      const tempEdges = edges.map((edge) => ({
-        ...edge,
-        animated: false, // Disable animation
-        style: {
-          ...edge.style,
-          // Ensure visible stroke
-          stroke: edge.style?.stroke || "#b1b1b7",
-          strokeWidth: edge.style?.strokeWidth || 2,
-        },
-      }));
-
-      // Update edges temporarily (this will force re-render without animations)
-      setEdges(tempEdges);
-
-      // Wait for the edge update to render
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Follow the exact same pattern as the working example
-      const nodesBounds = getNodesBounds(nodes);
-      const padding = 200; //extra padding for large trees
-      // calculate dynamic image dimensions based on content
-      const minWidth = 800;
-      const minHeight = 600;
-      const maxWidth = 4000; // 4K width limit
-      const maxHeight = 4000; // 4K height limit
-
-      // For small families, use content-based dimensions to ensure all nodes fit
-      const contentWidth = nodesBounds.width + padding * 2;
-      const contentHeight = nodesBounds.height + padding * 2;
-      const isSmallFamily =
-        contentWidth <= minWidth && contentHeight <= minHeight;
-
-      let imageWidth, imageHeight;
-
-      if (isSmallFamily) {
-        // Small family - use dimensions based on content with extra padding for bottom node
-        imageWidth = Math.max(contentWidth, 400); // minimum 400px
-        imageHeight = Math.max(contentHeight + 50, 300); // minimum 300px, extra 50px for bottom node
-      } else {
-        // Large family - use standard dimension calculation
-        imageWidth = Math.max(
-          minWidth,
-          Math.min(maxWidth, nodesBounds.width + padding * 2)
+        const originalDisplays = Array.from(controlPanels).map(
+          (panel) => panel.style.display
         );
-        imageHeight = Math.max(
-          minHeight,
-          Math.min(maxHeight, nodesBounds.height + padding * 2)
-        );
+        const originalAdminDisplay = adminDashboard?.style.display;
+        const originalAttributionDisplay = attribution?.style.display;
 
-        // For very wide trees, use wider aspect ratio
-        if (nodesBounds.width > nodesBounds.height * 2) {
-          imageWidth = Math.min(maxWidth, nodesBounds.width + padding * 2);
-          imageHeight = Math.max(minHeight, imageWidth * 0.6); // 5:3 aspect ratio
+        // Hide elements
+        controlPanels.forEach((panel) => {
+          (panel as HTMLElement).style.display = "none";
+        });
+        if (adminDashboard) {
+          (adminDashboard as HTMLElement).style.display = "none";
         }
-        // For very tall trees, use taller aspect ratio
-        else if (nodesBounds.height > nodesBounds.width * 2) {
-          imageHeight = Math.min(maxHeight, nodesBounds.height + padding * 2);
-          imageWidth = Math.max(minWidth, imageHeight * 0.6); // 3:5 aspect ratio
+        if (attribution) {
+          (attribution as HTMLElement).style.display = "none";
         }
-      }
 
-      console.log(
-        `Exporting ${nodes.length} nodes with dimensions: ${imageWidth}x${imageHeight}`
-      );
-      console.log(
-        `Content bounds: ${nodesBounds.width}x${nodesBounds.height}, isSmallFamily: ${isSmallFamily}`
-      );
+        // For premium export, temporarily modify node rendering
+        let nodeImages = {};
+        if (premium && currentFamilyId) {
+          try {
+            // Fetch all node images for this family
+            const headers: any = { "X-User-ID": userId };
+            if (token) {
+              headers.Authorization = `Bearer ${token}`;
+            }
 
-      // Use standard centering for all cases - it should work now with proper dimensions
-      const viewport = getViewportForBounds(
-        nodesBounds,
-        imageWidth,
-        imageHeight,
-        0.1,
-        1.5
-      );
+            // Get images for all nodes
+            const imagePromises = nodes.map(async (node) => {
+              try {
+                const response = await fetch(
+                  `${API_BASE_URL}/node-image/${currentFamilyId}/${node.id}`,
+                  {
+                    headers,
+                  }
+                );
+                if (response.ok) {
+                  const imageData = await response.json();
+                  return { nodeId: node.id, imageData };
+                }
+              } catch (error) {
+                console.warn(
+                  `Failed to fetch image for node ${node.id}:`,
+                  error
+                );
+              }
+              return null;
+            });
 
-      const dataUrl = await toPng(
-        document.querySelector(".react-flow__viewport"),
-        {
-          backgroundColor: "transparent",
-          width: imageWidth,
-          height: imageHeight,
-          pixelRatio: 1, //high-res
+            const imageResults = await Promise.all(imagePromises);
+            nodeImages = imageResults
+              .filter((result) => result !== null)
+              .reduce((acc, result) => {
+                acc[result.nodeId] = result.imageData;
+                return acc;
+              }, {});
+          } catch (error) {
+            console.warn("Failed to fetch node images:", error);
+          }
+
+          // Temporarily replace node content for premium export
+          const nodeElements = document.querySelectorAll(".family-node");
+          nodeElements.forEach((nodeEl) => {
+            const nodeId = (nodeEl as HTMLElement).getAttribute("data-id");
+            const node = nodes.find((n) => n.id === nodeId);
+            const imageData = nodeImages[nodeId];
+
+            if (node) {
+              // Store original content
+              const originalContent = nodeEl.innerHTML;
+
+              // Create premium content
+              const premiumContent = `
+                <div style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  width: 100%;
+                  height: 100%;
+                  padding: 8px;
+                  box-sizing: border-box;
+                ">
+                  <div style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    ${
+                      imageData
+                        ? `background-image: url(${imageData.image_data});
+                       background-size: cover;
+                       background-position: center;`
+                        : `background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+                       display: flex;
+                       align-items: center;
+                       justify-content: center;
+                       font-size: 24px;
+                       color: #6b7280;`
+                    }
+                    border: 3px solid #fff;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                    margin-bottom: 8px;
+                  ">
+                    ${!imageData ? "❓" : ""}
+                  </div>
+                  <div style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #1e293b;
+                    text-align: center;
+                    max-width: 120px;
+                    word-wrap: break-word;
+                    line-height: 1.2;
+                  ">
+                    ${node.data.name || node.data.label || "Unknown"}
+                  </div>
+                </div>
+              `;
+
+              nodeEl.innerHTML = premiumContent;
+              // Store original content for restoration
+              (nodeEl as any)._originalContent = originalContent;
+            }
+          });
+
+          // Wait for DOM updates to settle - longer wait for premium export
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        // CRITICAL: Temporarily disable animations and fix edge styles for export
+        const tempEdges = edges.map((edge) => ({
+          ...edge,
+          animated: false, // Disable animation
           style: {
+            ...edge.style,
+            // Ensure visible stroke
+            stroke: edge.style?.stroke || "#b1b1b7",
+            strokeWidth: edge.style?.strokeWidth || 2,
+          },
+        }));
+
+        // Update edges temporarily (this will force re-render without animations)
+        setEdges(tempEdges);
+
+        // Wait for the edge update to render
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        // For premium export, recalculate bounds after DOM changes
+        let nodesBounds;
+        if (premium) {
+          // Wait a bit more for DOM to settle, then recalculate bounds
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          nodesBounds = getNodesBounds(nodes);
+        } else {
+          nodesBounds = getNodesBounds(nodes);
+        }
+        const padding = 200; //extra padding for large trees
+        // calculate dynamic image dimensions based on content
+        const minWidth = 800;
+        const minHeight = 600;
+        const maxWidth = 4000; // 4K width limit
+        const maxHeight = 4000; // 4K height limit
+
+        // For small families, use content-based dimensions to ensure all nodes fit
+        const contentWidth = nodesBounds.width + padding * 2;
+        const contentHeight = nodesBounds.height + padding * 2;
+        const isSmallFamily =
+          contentWidth <= minWidth && contentHeight <= minHeight;
+
+        let imageWidth, imageHeight;
+
+        if (isSmallFamily) {
+          // Small family - use dimensions based on content with extra padding for bottom node
+          imageWidth = Math.max(contentWidth, 400); // minimum 400px
+          imageHeight = Math.max(contentHeight + 50, 300); // minimum 300px, extra 50px for bottom node
+        } else {
+          // Large family - use standard dimension calculation
+          imageWidth = Math.max(
+            minWidth,
+            Math.min(maxWidth, nodesBounds.width + padding * 2)
+          );
+          imageHeight = Math.max(
+            minHeight,
+            Math.min(maxHeight, nodesBounds.height + padding * 2)
+          );
+
+          // For very wide trees, use wider aspect ratio
+          if (nodesBounds.width > nodesBounds.height * 2) {
+            imageWidth = Math.min(maxWidth, nodesBounds.width + padding * 2);
+            imageHeight = Math.max(minHeight, imageWidth * 0.6); // 5:3 aspect ratio
+          }
+          // For very tall trees, use taller aspect ratio
+          else if (nodesBounds.height > nodesBounds.width * 2) {
+            imageHeight = Math.min(maxHeight, nodesBounds.height + padding * 2);
+            imageWidth = Math.max(minWidth, imageHeight * 0.6); // 3:5 aspect ratio
+          }
+        }
+
+        console.log(
+          `Exporting ${nodes.length} nodes with dimensions: ${imageWidth}x${imageHeight}`
+        );
+        console.log(
+          `Content bounds: ${nodesBounds.width}x${nodesBounds.height}, isSmallFamily: ${isSmallFamily}`
+        );
+
+        // Use standard centering for all cases - it should work now with proper dimensions
+        const viewport = getViewportForBounds(
+          nodesBounds,
+          imageWidth,
+          imageHeight,
+          0.1,
+          1.5
+        );
+
+        const dataUrl = await toPng(
+          document.querySelector(".react-flow__viewport"),
+          {
+            backgroundColor: "transparent",
             width: imageWidth,
             height: imageHeight,
-            transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
-          },
+            pixelRatio: 1, //high-res
+            style: {
+              width: imageWidth,
+              height: imageHeight,
+              transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+            },
+          }
+        );
+
+        // Restore original edges (with animations)
+        setEdges(edges);
+
+        // Restore node content for premium export
+        if (premium) {
+          const nodeElements = document.querySelectorAll(".family-node");
+          nodeElements.forEach((nodeEl) => {
+            if ((nodeEl as any)._originalContent) {
+              nodeEl.innerHTML = (nodeEl as any)._originalContent;
+            }
+          });
         }
-      );
 
-      // Restore original edges (with animations)
-      setEdges(edges);
+        // Restore UI elements
+        controlPanels.forEach((panel, index) => {
+          (panel as HTMLElement).style.display = originalDisplays[index] || "";
+        });
+        if (adminDashboard) {
+          (adminDashboard as HTMLElement).style.display =
+            originalAdminDisplay || "";
+        }
+        if (attribution) {
+          (attribution as HTMLElement).style.display =
+            originalAttributionDisplay || "";
+        }
 
-      // Restore UI elements
-      controlPanels.forEach((panel, index) => {
-        panel.style.display = originalDisplays[index] || "";
-      });
-      if (adminDashboard) {
-        adminDashboard.style.display = originalAdminDisplay || "";
+        // Download
+        const timestamp = new Date()
+          .toISOString()
+          .slice(0, 19)
+          .replace(/:/g, "-");
+        const filename = `${currentFamily || "family-tree"}-${timestamp}.png`;
+        downloadImage(dataUrl, filename);
+
+        console.log("Family tree exported successfully!");
+      } catch (error) {
+        console.error("Export failed:", error);
+
+        // Emergency restore - restore original edges and UI
+        setEdges(edges);
+        const controlPanels = document.querySelectorAll(".control-panel");
+        const adminDashboard = document.querySelector(".admin-dashboard-modal");
+        const attribution = document.querySelector(".react-flow__attribution");
+
+        controlPanels.forEach((panel) => {
+          panel.style.display = "";
+        });
+        if (adminDashboard) {
+          adminDashboard.style.display = "";
+        }
+        if (attribution) {
+          attribution.style.display = "";
+        }
+
+        alert("Export failed. Please try again.");
       }
-      if (attribution) {
-        attribution.style.display = originalAttributionDisplay || "";
-      }
-
-      // Download
-      const timestamp = new Date()
-        .toISOString()
-        .slice(0, 19)
-        .replace(/:/g, "-");
-      const filename = `${currentFamily || "family-tree"}-${timestamp}.png`;
-      downloadImage(dataUrl, filename);
-
-      console.log("Family tree exported successfully!");
-    } catch (error) {
-      console.error("Export failed:", error);
-
-      // Emergency restore - restore original edges and UI
-      setEdges(edges);
-      const controlPanels = document.querySelectorAll(".control-panel");
-      const adminDashboard = document.querySelector(".admin-dashboard-modal");
-      const attribution = document.querySelector(".react-flow__attribution");
-
-      controlPanels.forEach((panel) => {
-        panel.style.display = "";
-      });
-      if (adminDashboard) {
-        adminDashboard.style.display = "";
-      }
-      if (attribution) {
-        attribution.style.display = "";
-      }
-
-      alert("Export failed. Please try again.");
-    }
-  }, [currentFamily, nodes, edges, setEdges]);
+    },
+    [currentFamily, nodes, edges, setEdges]
+  );
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -2412,6 +3137,21 @@ const Flow = ({
         />
       )}
 
+      {/* Export Modal */}
+      {showExportModal && (
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          onExportFree={exportAsImage}
+          onExportPremium={() => {
+            exportAsImage(true);
+          }}
+          isPremium={isPremium}
+          onActivatePremium={activatePremium}
+          isActivating={isActivatingPremium}
+        />
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -2463,14 +3203,25 @@ const Flow = ({
                 />
                 <button
                   className="control-btn"
-                  onClick={() => setShowMessagesPanel(!showMessagesPanel)}
+                  onClick={() => {
+                    setShowMessagesPanel(!showMessagesPanel);
+                    // Mark unread messages as read when opening panel
+                    if (!showMessagesPanel) {
+                      const unreadMessageIds = messages
+                        .filter((msg) => !msg.is_read)
+                        .map((msg) => msg.id);
+                      if (unreadMessageIds.length > 0) {
+                        markMessagesAsRead(unreadMessageIds);
+                      }
+                    }
+                  }}
                   style={{
-                    background: messages.length > 0 ? "#3b82f6" : "#6b7280",
+                    background: unreadMessageCount > 0 ? "#3b82f6" : "#6b7280",
                     position: "relative",
                   }}
                 >
                   📬 Messages
-                  {messages.length > 0 && (
+                  {unreadMessageCount > 0 && (
                     <span
                       style={{
                         position: "absolute",
@@ -2488,7 +3239,7 @@ const Flow = ({
                         fontWeight: "bold",
                       }}
                     >
-                      {messages.length}
+                      {unreadMessageCount}
                     </span>
                   )}
                 </button>
@@ -2540,9 +3291,17 @@ const Flow = ({
                             style={{
                               padding: "12px",
                               borderBottom: "1px solid #f1f5f9",
-                              background: "rgba(255, 255, 255, 0.8)",
+                              background: message.is_read
+                                ? "rgba(255, 255, 255, 0.8)"
+                                : "rgba(59, 130, 246, 0.1)",
                               borderRadius: "6px",
                               marginBottom: "8px",
+                              borderLeft:
+                                message.message_type === "premium"
+                                  ? "4px solid #f59e0b"
+                                  : message.message_type === "welcome"
+                                  ? "4px solid #10b981"
+                                  : "4px solid #6b7280",
                             }}
                           >
                             <div
@@ -2550,6 +3309,7 @@ const Flow = ({
                                 fontSize: "14px",
                                 color: "#1e293b",
                                 marginBottom: "4px",
+                                fontWeight: message.is_read ? "normal" : "600",
                               }}
                             >
                               {message.message}
@@ -2558,9 +3318,19 @@ const Flow = ({
                               style={{
                                 fontSize: "12px",
                                 color: "#64748b",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
                               }}
                             >
-                              {new Date(message.created_at).toLocaleString()}
+                              <span>
+                                {new Date(message.created_at).toLocaleString()}
+                              </span>
+                              {message.family_name && (
+                                <span style={{ fontStyle: "italic" }}>
+                                  {message.family_name}
+                                </span>
+                              )}
                             </div>
                           </div>
                         ))
@@ -2657,7 +3427,10 @@ const Flow = ({
         <Panel position="bottom-right" className="control-panel">
           <div className="panel-section">
             <h4>Export & Theme</h4>
-            <button className="control-btn" onClick={exportAsImage}>
+            <button
+              className="control-btn"
+              onClick={() => setShowExportModal(true)}
+            >
               📷 Export PNG
             </button>
             <button className="control-btn" onClick={saveFamilyTree}>
@@ -2666,6 +3439,25 @@ const Flow = ({
             <button className="control-btn" onClick={toggleTheme}>
               {theme === "light" ? "🌙 Dark" : "☀️ Light"}
             </button>
+            {isPremium && (
+              <div
+                style={{
+                  marginTop: "8px",
+                  padding: "4px 6px",
+                  background:
+                    "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%)",
+                  borderRadius: "4px",
+                  border: "1px solid #f59e0b",
+                  fontSize: "10px",
+                  color: "#92400e",
+                  textAlign: "center",
+                  lineHeight: "1.2",
+                }}
+              >
+                <div style={{ fontWeight: "600" }}>👑 Premium Active</div>
+                {/* <div>Double-click nodes to add photos</div> */}
+              </div>
+            )}
           </div>
         </Panel>
 

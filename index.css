@@ -156,6 +156,8 @@ body {
 .cancel-btn {
   background: #ef4444;
   color: white;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 /* Add Button Styles */
@@ -456,4 +458,75 @@ body {
 
 .dark .react-flow__background {
   background-color: #1a1a1a;
+}
+
+/* Image Upload and Display Styles */
+.node-with-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.node-image {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .node-image {
+  border-color: #4a5568;
+}
+
+.image-upload-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.dark .image-upload-section {
+  border-color: #4a5568;
+}
+
+.image-upload-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.image-upload-btn {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.image-upload-btn:hover {
+  background: #2563eb;
+}
+
+.remove-image-btn {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 6px;
+  transition: background 0.2s ease;
+}
+
+.remove-image-btn:hover {
+  background: #dc2626;
 }
