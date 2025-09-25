@@ -593,9 +593,9 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
       <div
         style={{
           background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-          padding: "40px",
+          padding: window.innerWidth <= 768 ? "20px" : "40px",
           borderRadius: "20px",
-          width: "400px",
+          width: window.innerWidth <= 768 ? "320px" : "400px",
           maxWidth: "90vw",
           textAlign: "center",
           boxShadow:
@@ -606,9 +606,9 @@ const AuthModal = ({ mode, onLogin, onSignup, onSwitchMode, onClose }) => {
       >
         <h2
           style={{
-            marginBottom: "30px",
+            marginBottom: window.innerWidth <= 768 ? "20px" : "30px",
             color: "#1e293b",
-            fontSize: "28px",
+            fontSize: window.innerWidth <= 768 ? "24px" : "28px",
             fontWeight: "700",
             letterSpacing: "-0.025em",
           }}
