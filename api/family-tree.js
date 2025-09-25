@@ -1,10 +1,16 @@
 const { Pool } = require('pg');
 const crypto = require('crypto');
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
-});
+let pool;
+
+const getPool = () => {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
+    });
+  }
+  return pool;
+};
 
 // Token functions
 const generateToken = () => crypto.randomBytes(32).toString('hex');
@@ -23,7 +29,7 @@ const getUserId = async (req) => {
     }
 
     // Ensure user exists in DB
-    await pool.query(
+    await getPool().query(
       `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
       [userId]
     );
@@ -38,8 +44,9 @@ const getUserId = async (req) => {
 // Initialize database
 const initDb = async () => {
   try {
+    const pool = getPool();
     // Users table
-    await pool.query(`
+    await getPool().query(`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         created_at TIMESTAMPTZ DEFAULT NOW()
@@ -47,7 +54,7 @@ const initDb = async () => {
     `);
 
     // Family trees table
-    await pool.query(`
+    await getPool().query(`
       CREATE TABLE IF NOT EXISTS family_trees (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL UNIQUE,
@@ -60,7 +67,7 @@ const initDb = async () => {
     `);
 
     // Family admins table
-    await pool.query(`
+    await getPool().query(`
       CREATE TABLE IF NOT EXISTS family_admins (
         id SERIAL PRIMARY KEY,
         family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
@@ -72,7 +79,7 @@ const initDb = async () => {
     `);
 
     // Activity logs table
-    await pool.query(`
+    await getPool().query(`
       CREATE TABLE IF NOT EXISTS activity_logs (
         id SERIAL PRIMARY KEY,
         family_id INTEGER NOT NULL REFERENCES family_trees(id) ON DELETE CASCADE,
@@ -84,16 +91,13 @@ const initDb = async () => {
     `);
 
     // Create indexes
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_family_trees_name ON family_trees(name);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_family_admins_family_id ON family_admins(family_id);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_activity_logs_family_id ON activity_logs(family_id);`);
+    await getPool().query(`CREATE INDEX IF NOT EXISTS idx_family_trees_name ON family_trees(name);`);
+    await getPool().query(`CREATE INDEX IF NOT EXISTS idx_family_admins_family_id ON family_admins(family_id);`);
+    await getPool().query(`CREATE INDEX IF NOT EXISTS idx_activity_logs_family_id ON activity_logs(family_id);`);
   } catch (err) {
     console.error('Database initialization error:', err);
   }
 };
-
-// Initialize DB on module load
-initDb();
 
 module.exports = async function handler(req, res) {
   // Enable CORS
@@ -106,12 +110,13 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    await initDb();
     const userId = await getUserId(req);
 
     switch (req.method) {
       case 'GET':
         // Get all family trees for user
-        const result = await pool.query(`
+        const result = await getPool().query(`
           SELECT DISTINCT ft.*
           FROM family_trees ft
           LEFT JOIN family_admins fa ON ft.id = fa.family_id
@@ -129,7 +134,7 @@ module.exports = async function handler(req, res) {
         }
 
         // Check if family name exists
-        const existingFamily = await pool.query(
+        const existingFamily = await getPool().query(
           'SELECT * FROM family_trees WHERE LOWER(name) = LOWER($1)',
           [name]
         );
@@ -142,13 +147,13 @@ module.exports = async function handler(req, res) {
         const code = accessCode || crypto.randomBytes(4).toString('hex');
 
         // Insert new family tree
-        const insertResult = await pool.query(
+        const insertResult = await getPool().query(
           `INSERT INTO family_trees (name, data, admin_id, access_code) VALUES ($1, $2, $3, $4) RETURNING *`,
           [name, data, userId, code]
         );
 
         // Add admin entry
-        await pool.query(
+        await getPool().query(
           `INSERT INTO family_admins (family_id, user_id, added_by) VALUES ($1, $2, $3)`,
           [insertResult.rows[0].id, userId, userId]
         );

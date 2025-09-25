@@ -1,10 +1,16 @@
 const { Pool } = require('pg');
 const crypto = require('crypto');
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
-});
+let pool;
+
+const getPool = () => {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
+    });
+  }
+  return pool;
+};
 
 // Middleware to get or create user ID
 const getUserId = async (req) => {
@@ -16,7 +22,7 @@ const getUserId = async (req) => {
     }
 
     // Ensure user exists in DB
-    await pool.query(
+    await getPool().query(
       `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
       [userId]
     );
@@ -45,12 +51,13 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    await initDb();
     const userId = await getUserId(req);
 
     switch (req.method) {
       case 'GET':
         // Get specific family tree
-        const familyResult = await pool.query(
+        const familyResult = await getPool().query(
           'SELECT * FROM family_trees WHERE id = $1',
           [id]
         );
@@ -62,7 +69,7 @@ module.exports = async function handler(req, res) {
         const family = familyResult.rows[0];
 
         // Check if user has access
-        const accessCheck = await pool.query(`
+        const accessCheck = await getPool().query(`
           SELECT fa.user_id as admin_user_id
           FROM family_admins fa
           WHERE fa.family_id = $1 AND fa.user_id = $2
@@ -84,7 +91,7 @@ module.exports = async function handler(req, res) {
         }
 
         // Check if user has admin access
-        const adminCheck = await pool.query(`
+        const adminCheck = await getPool().query(`
           SELECT fa.user_id as admin_user_id
           FROM family_admins fa
           WHERE fa.family_id = $1 AND fa.user_id = $2
@@ -97,7 +104,7 @@ module.exports = async function handler(req, res) {
         }
 
         // Get current data for logging
-        const currentDataResult = await pool.query(
+        const currentDataResult = await getPool().query(
           'SELECT data FROM family_trees WHERE id = $1',
           [id]
         );
@@ -109,13 +116,13 @@ module.exports = async function handler(req, res) {
         const oldData = currentDataResult.rows[0].data;
 
         // Update the family tree
-        const updateResult = await pool.query(
+        const updateResult = await getPool().query(
           'UPDATE family_trees SET data = $1 WHERE id = $2 RETURNING *',
           [data, id]
         );
 
         // Log the update
-        await pool.query(
+        await getPool().query(
           `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
           [id, userId, 'update', { oldData, newData: data }]
         );
@@ -124,7 +131,7 @@ module.exports = async function handler(req, res) {
 
       case 'DELETE':
         // Check admin access
-        const deleteAdminCheck = await pool.query(`
+        const deleteAdminCheck = await getPool().query(`
           SELECT fa.user_id as admin_user_id
           FROM family_admins fa
           WHERE fa.family_id = $1 AND fa.user_id = $2
@@ -137,7 +144,7 @@ module.exports = async function handler(req, res) {
         }
 
         // Delete the family tree (this will cascade delete related records)
-        await pool.query('DELETE FROM family_trees WHERE id = $1', [id]);
+        await getPool().query('DELETE FROM family_trees WHERE id = $1', [id]);
 
         return res.status(200).json({ message: 'Family tree deleted successfully' });
 

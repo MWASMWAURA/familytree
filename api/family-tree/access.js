@@ -1,10 +1,16 @@
 const { Pool } = require('pg');
 const crypto = require('crypto');
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
-});
+let pool;
+
+const getPool = () => {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
+    });
+  }
+  return pool;
+};
 
 // Middleware to get or create user ID
 const getUserId = async (req) => {
@@ -16,7 +22,7 @@ const getUserId = async (req) => {
     }
 
     // Ensure user exists in DB
-    await pool.query(
+    await getPool().query(
       `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
       [userId]
     );
@@ -43,6 +49,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    await initDb();
     const userId = await getUserId(req);
     const { familyName, accessCode } = req.body;
 
@@ -51,14 +58,14 @@ module.exports = async function handler(req, res) {
     }
 
     // Find family by name and access code
-    let result = await pool.query(
+    let result = await getPool().query(
       'SELECT * FROM family_trees WHERE LOWER(name) = LOWER($1) AND access_code = $2',
       [familyName, accessCode]
     );
 
     // If not found by access code, check if accessCode is actually a token
     if (result.rows.length === 0) {
-      const tokenResult = await pool.query(
+      const tokenResult = await getPool().query(
         'SELECT ft.* FROM access_tokens at JOIN family_trees ft ON at.family_id = ft.id WHERE at.token = $1 AND at.expires_at > NOW()',
         [accessCode]
       );
@@ -72,13 +79,13 @@ module.exports = async function handler(req, res) {
     const family = result.rows[0];
 
     // Log the access
-    await pool.query(
+    await getPool().query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
       [family.id, userId, 'access', { familyName, accessCode }]
     );
 
     // Check if user is admin
-    const adminCheck = await pool.query(`
+    const adminCheck = await getPool().query(`
       SELECT fa.user_id as admin_user_id
       FROM family_admins fa
       WHERE fa.family_id = $1 AND fa.user_id = $2

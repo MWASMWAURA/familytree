@@ -1,10 +1,16 @@
 const { Pool } = require('pg');
 const crypto = require('crypto');
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
-});
+let pool;
+
+const getPool = () => {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
+    });
+  }
+  return pool;
+};
 
 // Middleware to get or create user ID
 const getUserId = async (req) => {
@@ -16,7 +22,7 @@ const getUserId = async (req) => {
     }
 
     // Ensure user exists in DB
-    await pool.query(
+    await getPool().query(
       `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
       [userId]
     );
@@ -49,10 +55,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    await initDb();
     const userId = await getUserId(req);
 
     // Check if current user is admin of this family
-    const adminCheck = await pool.query(`
+    const adminCheck = await getPool().query(`
       SELECT * FROM family_admins
       WHERE family_id = $1 AND user_id = $2
     `, [id, userId]);
@@ -65,7 +72,7 @@ module.exports = async function handler(req, res) {
     const newCode = crypto.randomBytes(4).toString('hex');
 
     // Get current code for logging
-    const currentFamily = await pool.query(
+    const currentFamily = await getPool().query(
       'SELECT access_code FROM family_trees WHERE id = $1',
       [id]
     );
@@ -77,13 +84,13 @@ module.exports = async function handler(req, res) {
     const oldCode = currentFamily.rows[0].access_code;
 
     // Update the family tree with new access code
-    const result = await pool.query(
+    const result = await getPool().query(
       'UPDATE family_trees SET access_code = $1 WHERE id = $2 RETURNING *',
       [newCode, id]
     );
 
     // Log the code regeneration
-    await pool.query(
+    await getPool().query(
       `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
       [id, userId, 'regenerate_code', { oldCode, newCode }]
     );

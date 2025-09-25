@@ -1,10 +1,16 @@
 const { Pool } = require('pg');
 const crypto = require('crypto');
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
-});
+let pool;
+
+const getPool = () => {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || process.env.CONNECTION_STRING,
+    });
+  }
+  return pool;
+};
 
 // Middleware to get or create user ID
 const getUserId = async (req) => {
@@ -16,7 +22,7 @@ const getUserId = async (req) => {
     }
 
     // Ensure user exists in DB
-    await pool.query(
+    await getPool().query(
       `INSERT INTO users (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`,
       [userId]
     );
@@ -45,12 +51,13 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    await initDb();
     const userId = await getUserId(req);
 
     switch (req.method) {
       case 'GET':
         // Check if current user is admin of this family
-        const adminCheck = await pool.query(`
+        const adminCheck = await getPool().query(`
           SELECT * FROM family_admins
           WHERE family_id = $1 AND user_id = $2
         `, [id, userId]);
@@ -60,7 +67,7 @@ module.exports = async function handler(req, res) {
         }
 
         // Get all admins for this family
-        const result = await pool.query(`
+        const result = await getPool().query(`
           SELECT fa.*, u.created_at as user_created_at
           FROM family_admins fa
           JOIN users u ON fa.user_id = u.id
@@ -78,7 +85,7 @@ module.exports = async function handler(req, res) {
         }
 
         // Check if current user is admin of this family
-        const adminCheckPost = await pool.query(`
+        const adminCheckPost = await getPool().query(`
           SELECT * FROM family_admins
           WHERE family_id = $1 AND user_id = $2
         `, [id, userId]);
@@ -88,13 +95,13 @@ module.exports = async function handler(req, res) {
         }
 
         // Add new admin
-        await pool.query(
+        await getPool().query(
           `INSERT INTO family_admins (family_id, user_id, added_by) VALUES ($1, $2, $3)`,
           [id, newAdminId, userId]
         );
 
         // Log the admin addition
-        await pool.query(
+        await getPool().query(
           `INSERT INTO activity_logs (family_id, user_id, action, details) VALUES ($1, $2, $3, $4)`,
           [id, userId, 'add_admin', { newAdminId }]
         );
