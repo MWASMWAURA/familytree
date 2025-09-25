@@ -11,6 +11,7 @@ interface AdminDashboardProps {
   theme: string;
   compact?: boolean;
   showQuickAction?: boolean;
+  isModal?: boolean;
 }
 
 interface ActivityLog {
@@ -31,6 +32,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   theme,
   compact,
   showQuickAction,
+  isModal = true,
 }) => {
   const [newAdminId, setNewAdminId] = useState("");
   const [showAdminForm, setShowAdminForm] = useState(false);
@@ -50,25 +52,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const minHeight = 200;
   const collapsedWidth = 120;
 
-  // Load position from localStorage on mount
+  // Load position from localStorage on mount - only for modal
   React.useEffect(() => {
-    const saved = localStorage.getItem("adminDashboardPosition");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (typeof parsed.top === "number" && typeof parsed.left === "number") {
-          setPosition(parsed);
-        }
-      } catch {}
+    if (isModal) {
+      const saved = localStorage.getItem("adminDashboardPosition");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (
+            typeof parsed.top === "number" &&
+            typeof parsed.left === "number"
+          ) {
+            setPosition(parsed);
+          }
+        } catch {}
+      }
     }
-  }, []);
+  }, [isModal]);
 
-  // Save position to localStorage on drag end
+  // Save position to localStorage on drag end - only for modal
   React.useEffect(() => {
-    if (!isDragging) {
+    if (isModal && !isDragging) {
       localStorage.setItem("adminDashboardPosition", JSON.stringify(position));
     }
-  }, [isDragging, position]);
+  }, [isModal, isDragging, position]);
 
   // Handle resizing
   const handleResize = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -125,7 +132,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   React.useEffect(() => {
-    if (isDragging) {
+    if (isModal && isDragging) {
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
       return () => {
@@ -133,9 +140,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [isDragging, dragOffset]);
+  }, [isModal, isDragging, dragOffset]);
 
   React.useEffect(() => {
+    if (!isModal) return;
+
     if (!collapsed) {
       const rightEdge = position.left + dimensions.width;
       if (rightEdge > window.innerWidth - 10) {
@@ -150,9 +159,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         left: Math.max(0, window.innerWidth - collapsedWidth - 30),
       }));
     }
-  }, [collapsed, dimensions.width, position.left]);
+  }, [isModal, collapsed, dimensions.width, position.left]);
 
   React.useEffect(() => {
+    if (!isModal) return;
+
     const handleResize = () => {
       setDimensions((d) => {
         const maxW = Math.min(d.width, window.innerWidth - 20);
@@ -176,7 +187,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [dimensions.width, dimensions.height, minWidth, minHeight]);
+  }, [isModal, dimensions.width, dimensions.height, minWidth, minHeight]);
 
   const memberAccessLink = `${
     window.location.origin
@@ -291,91 +302,130 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   return (
     <div
       ref={modalRef}
-      className="admin-dashboard-modal"
-      style={{
-        position: "fixed",
-        top: Math.max(
-          0,
-          Math.min(
-            window.innerHeight - (collapsed ? 36 : dimensions.height),
-            position.top
-          )
-        ),
-        left: position.left,
-        zIndex: 1000,
-        ...compactStyles,
-        width: collapsed
-          ? collapsedWidth
-          : Math.min(dimensions.width, window.innerWidth - 20),
-        height: collapsed
-          ? 36
-          : Math.min(dimensions.height, window.innerHeight - 20),
-        minWidth: 60,
-        minHeight: 32,
-        maxWidth: "98vw",
-        maxHeight: "90vh",
-        resize: "none",
-        borderRadius: 10,
-        boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-        background: theme === "dark" ? "#232323" : "#fff",
-        border: "1px solid #aaa",
-        overflow: "hidden",
-        transition:
-          "width 0.2s, height 0.3s cubic-bezier(.4,2,.6,1), box-shadow 0.2s, left 0.2s, top 0.2s",
-        userSelect: isDragging ? "none" : "auto",
-      }}
+      className={isModal ? "admin-dashboard-modal" : "admin-dashboard-panel"}
+      style={
+        isModal
+          ? {
+              position: "fixed",
+              top: Math.max(
+                0,
+                Math.min(
+                  window.innerHeight - (collapsed ? 36 : dimensions.height),
+                  position.top
+                )
+              ),
+              left: position.left,
+              zIndex: 1000,
+              ...compactStyles,
+              width: collapsed
+                ? collapsedWidth
+                : Math.min(dimensions.width, window.innerWidth - 20),
+              height: collapsed
+                ? 36
+                : Math.min(dimensions.height, window.innerHeight - 20),
+              minWidth: 60,
+              minHeight: 32,
+              maxWidth: "98vw",
+              maxHeight: "90vh",
+              resize: "none",
+              borderRadius: 10,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+              background: theme === "dark" ? "#232323" : "#fff",
+              border: "1px solid #aaa",
+              overflow: "hidden",
+              transition:
+                "width 0.2s, height 0.3s cubic-bezier(.4,2,.6,1), box-shadow 0.2s, left 0.2s, top 0.2s",
+              userSelect: isDragging ? "none" : "auto",
+            }
+          : {
+              width: "100%",
+              height: "auto",
+              background:
+                theme === "dark"
+                  ? "rgba(44, 62, 80, 0.95)"
+                  : "rgba(255, 255, 255, 0.95)",
+              borderRadius: 12,
+              padding: compact ? "10px" : "20px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+              backdropFilter: "blur(10px)",
+              border:
+                theme === "dark"
+                  ? "1px solid rgba(255, 255, 255, 0.1)"
+                  : "1px solid rgba(255, 255, 255, 0.2)",
+              overflow: "auto",
+              ...compactStyles,
+            }
+      }
     >
-      {/* Collapsible header, now also the draggable handle */}
-      <div
-        className="admin-dashboard-modal-header"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          cursor: isDragging ? "grabbing" : "move",
-          borderBottom: collapsed ? "none" : "1px solid #ccc",
-          padding: collapsed ? "0 8px" : compact ? "8px 12px" : "16px 20px",
-          fontWeight: 600,
-          fontSize: collapsed ? "13px" : compact ? "15px" : "18px",
-          background: theme === "dark" ? "#333" : "#f5f5f5",
-          borderRadius: collapsed ? 5 : "5px 5px 0 0",
-          boxShadow: collapsed ? "0 2px 4px rgba(0,0,0,0.08)" : "none",
-          transition: "background 0.2s, padding 0.2s, font-size 0.2s",
-          userSelect: "none",
-        }}
-        onMouseDown={handleMouseDown}
-      >
-        <span
+      {/* Header - only for modal mode */}
+      {isModal && (
+        <div
+          className="admin-dashboard-modal-header"
           style={{
-            fontSize: collapsed ? 13 : 15,
-            marginLeft: 2,
-            flex: 1,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {collapsed ? "Admin" : `🔐Admin Dashboard - ${currentFamily}`}
-        </span>
-        <span
-          style={{
-            fontSize: 14,
-            marginLeft: 4,
-            cursor: "pointer",
             display: "flex",
             alignItems: "center",
+            justifyContent: "space-between",
+            cursor: isDragging ? "grabbing" : "move",
+            borderBottom: collapsed ? "none" : "1px solid #ccc",
+            padding: collapsed ? "0 8px" : compact ? "8px 12px" : "16px 20px",
+            fontWeight: 600,
+            fontSize: collapsed ? "13px" : compact ? "15px" : "18px",
+            background: theme === "dark" ? "#333" : "#f5f5f5",
+            borderRadius: collapsed ? 5 : "5px 5px 0 0",
+            boxShadow: collapsed ? "0 2px 4px rgba(0,0,0,0.08)" : "none",
+            transition: "background 0.2s, padding 0.2s, font-size 0.2s",
+            userSelect: "none",
           }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setCollapsed((c) => !c);
-          }}
-          title={collapsed ? "Expand" : "Collapse"}
+          onMouseDown={handleMouseDown}
         >
-          {collapsed ? "▼" : "▲"}
-        </span>
-      </div>
-      {/* Resizer handle (bottom right corner) */}
-      {!collapsed && (
+          <span
+            style={{
+              fontSize: collapsed ? 13 : 15,
+              marginLeft: 2,
+              flex: 1,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {collapsed ? "Admin" : `🔐Admin Dashboard - ${currentFamily}`}
+          </span>
+          <span
+            style={{
+              fontSize: 14,
+              marginLeft: 4,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCollapsed((c) => !c);
+            }}
+            title={collapsed ? "Expand" : "Collapse"}
+          >
+            {collapsed ? "▼" : "▲"}
+          </span>
+        </div>
+      )}
+
+      {/* Title for inline mode */}
+      {!isModal && (
+        <h3
+          style={{
+            margin: "0 0 20px 0",
+            color: theme === "dark" ? "#ecf0f1" : "#2c3e50",
+            fontSize: "1.4em",
+            textAlign: "center",
+            borderBottom: "2px solid #3498db",
+            paddingBottom: "10px",
+          }}
+        >
+          🔐 Admin Dashboard - {currentFamily}
+        </h3>
+      )}
+      {/* Resizer handle (bottom right corner) - only for modal */}
+      {isModal && !collapsed && (
         <div
           style={{
             position: "absolute",
@@ -400,18 +450,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </svg>
         </div>
       )}
-      {/* Content with smooth transition */}
+      {/* Content */}
       <div
-        style={{
-          maxHeight: collapsed ? 0 : dimensions.height - 44,
-          opacity: collapsed ? 0 : 1,
-          overflow: "auto",
-          transition: "max-height 0.3s cubic-bezier(.4,2,.6,1), opacity 0.2s",
-          padding: collapsed ? 0 : 4,
-          pointerEvents: collapsed ? "none" : "auto",
-          minWidth: 0,
-          wordBreak: "break-all",
-        }}
+        style={
+          isModal
+            ? {
+                maxHeight: collapsed ? 0 : dimensions.height - 44,
+                opacity: collapsed ? 0 : 1,
+                overflow: "auto",
+                transition:
+                  "max-height 0.3s cubic-bezier(.4,2,.6,1), opacity 0.2s",
+                padding: collapsed ? 0 : 4,
+                pointerEvents: collapsed ? "none" : "auto",
+                minWidth: 0,
+                wordBreak: "break-all",
+              }
+            : {
+                overflow: "auto",
+                padding: compact ? "0" : "4px",
+                minWidth: 0,
+                wordBreak: "break-all",
+              }
+        }
       >
         {/* Access Code prominently */}
         <div

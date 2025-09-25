@@ -280,13 +280,17 @@
 /* Responsive design */
 @media (max-width: 768px) {
   .admin-dashboard-panel {
-    min-width: 300px;
-    max-width: 90vw;
-    padding: 15px;
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    padding: 10px;
+    margin: 0;
+    box-sizing: border-box;
   }
 
   .admin-dashboard h3 {
     font-size: 1.2em;
+    margin: 0 0 15px 0;
   }
 
   .quick-actions {
@@ -295,5 +299,52 @@
 
   .admin-form-buttons {
     flex-direction: column;
+  }
+
+  .admin-section {
+    margin-bottom: 15px;
+    padding: 10px;
+  }
+
+  .admin-section h4 {
+    font-size: 1em;
+    margin: 0 0 10px 0;
+  }
+
+  .link-section {
+    gap: 10px;
+  }
+
+  .link-item {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .link-display {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .link-input {
+    width: 100%;
+    font-size: 11px;
+  }
+
+  .copy-btn {
+    align-self: flex-end;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .admin-id-input {
+    width: 100%;
+    font-size: 12px;
+  }
+
+  .confirm-btn, .cancel-btn {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
   }
 }

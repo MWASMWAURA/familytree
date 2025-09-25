@@ -1424,13 +1424,15 @@ const ExportModal = ({
       <div
         style={{
           background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-          padding: "30px",
-          borderRadius: "20px",
-          width: "500px",
+          padding: "20px",
+          borderRadius: "16px",
+          width: "400px",
           maxWidth: "90vw",
+          maxHeight: "80vh",
+          overflowY: "auto",
           textAlign: "center",
           boxShadow:
-            "0 25px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8)",
+            "0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.8)",
           border: "1px solid rgba(0, 0, 0, 0.05)",
           animation: "slideUp 0.4s ease-out",
         }}
@@ -1450,12 +1452,19 @@ const ExportModal = ({
           Choose your export option
         </p>
 
-        <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: window.innerWidth <= 768 ? "column" : "row",
+            gap: "15px",
+            marginBottom: "20px",
+          }}
+        >
           {/* Free Export */}
           <div
             style={{
               flex: 1,
-              padding: "20px",
+              padding: "15px",
               border: "2px solid #e2e8f0",
               borderRadius: "12px",
               background: "rgba(255, 255, 255, 0.8)",
@@ -1474,24 +1483,24 @@ const ExportModal = ({
             }}
             onClick={handleFreeExport}
           >
-            <div style={{ fontSize: "48px", marginBottom: "10px" }}>📄</div>
+            <div style={{ fontSize: "36px", marginBottom: "8px" }}>📄</div>
             <h3
               style={{
-                margin: "0 0 10px 0",
+                margin: "0 0 8px 0",
                 color: "#1e293b",
-                fontSize: "20px",
+                fontSize: "18px",
                 fontWeight: "600",
               }}
             >
               Free Export
             </h3>
-            <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>
+            <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
               Export with standard nodes and text
             </p>
             <div
               style={{
-                marginTop: "15px",
-                fontSize: "18px",
+                marginTop: "12px",
+                fontSize: "16px",
                 fontWeight: "bold",
                 color: "#10b981",
               }}
@@ -1504,7 +1513,7 @@ const ExportModal = ({
           <div
             style={{
               flex: 1,
-              padding: "20px",
+              padding: "15px",
               border: "2px solid #fbbf24",
               borderRadius: "12px",
               background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 50%)",
@@ -1526,40 +1535,40 @@ const ExportModal = ({
             <div
               style={{
                 position: "absolute",
-                top: "-10px",
-                right: "-10px",
+                top: "-8px",
+                right: "-8px",
                 background: "#f59e0b",
                 color: "white",
                 borderRadius: "50%",
-                width: "30px",
-                height: "30px",
+                width: "24px",
+                height: "24px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "16px",
+                fontSize: "12px",
                 fontWeight: "bold",
               }}
             >
               👑
             </div>
-            <div style={{ fontSize: "48px", marginBottom: "10px" }}>📸</div>
+            <div style={{ fontSize: "36px", marginBottom: "8px" }}>📸</div>
             <h3
               style={{
-                margin: "0 0 10px 0",
+                margin: "0 0 8px 0",
                 color: "#92400e",
-                fontSize: "20px",
+                fontSize: "18px",
                 fontWeight: "600",
               }}
             >
               Premium Export
             </h3>
-            <p style={{ margin: 0, color: "#92400e", fontSize: "14px" }}>
+            <p style={{ margin: 0, color: "#92400e", fontSize: "13px" }}>
               Export with round photos and names
             </p>
             <div
               style={{
-                marginTop: "15px",
-                fontSize: "18px",
+                marginTop: "12px",
+                fontSize: "16px",
                 fontWeight: "bold",
                 color: "#dc2626",
               }}
@@ -1569,8 +1578,8 @@ const ExportModal = ({
             {isPremium && (
               <div
                 style={{
-                  marginTop: "10px",
-                  fontSize: "12px",
+                  marginTop: "8px",
+                  fontSize: "11px",
                   color: "#059669",
                   fontWeight: "600",
                 }}
@@ -1581,8 +1590,8 @@ const ExportModal = ({
             {isActivating && (
               <div
                 style={{
-                  marginTop: "10px",
-                  fontSize: "12px",
+                  marginTop: "8px",
+                  fontSize: "11px",
                   color: "#f59e0b",
                   fontWeight: "600",
                 }}
@@ -1640,13 +1649,15 @@ const ExportModal = ({
           <div
             style={{
               background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-              padding: "40px",
-              borderRadius: "20px",
-              width: "400px",
+              padding: "20px",
+              borderRadius: "16px",
+              width: "350px",
               maxWidth: "90vw",
+              maxHeight: "80vh",
+              overflowY: "auto",
               textAlign: "center",
               boxShadow:
-                "0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.8)",
+                "0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8)",
               border: "1px solid rgba(0, 0, 0, 0.05)",
               animation: "slideUp 0.4s ease-out",
             }}
@@ -3641,6 +3652,7 @@ const Flow = ({
               theme={theme}
               compact={true}
               showQuickAction={false}
+              isModal={false}
             />
           </div>
         </div>
@@ -3973,6 +3985,7 @@ const Flow = ({
               theme={theme}
               compact={true}
               showQuickAction={false}
+              isModal={true}
             />
           </Draggable>
         )}

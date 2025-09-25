@@ -664,7 +664,7 @@ body {
 
 .drawer-content {
   padding: 16px;
-  max-height: 60vh;
+  max-height: calc(100vh - 120px);
   overflow-y: auto;
 }
 
@@ -710,14 +710,19 @@ body {
 /* Admin Drawer */
 .admin-drawer {
   top: 20px;
-  right: -320px;
-  width: 300px;
+  right: -420px;
+  width: 400px;
   height: calc(100vh - 40px);
   border-radius: 12px 0 0 12px;
 }
 
 .admin-drawer.open {
   right: 20px;
+}
+
+.admin-drawer .drawer-content {
+  max-height: calc(100vh - 80px);
+  padding: 12px;
 }
 
 .admin-toggle {
