@@ -1330,8 +1330,8 @@ const ExportModal = ({
 
   if (!isOpen) return null;
 
-  const handleFreeExport = () => {
-    onExportFree();
+  const handleFreeExport = async () => {
+    await onExportFree();
     onClose(); // Auto-close modal after free export
   };
 
@@ -1448,7 +1448,7 @@ const ExportModal = ({
               e.target.style.transform = "translateY(0)";
               e.target.style.boxShadow = "none";
             }}
-            onClick={onExportFree}
+            onClick={handleFreeExport}
           >
             <div style={{ fontSize: "48px", marginBottom: "10px" }}>📄</div>
             <h3
@@ -1670,33 +1670,58 @@ const ExportModal = ({
                     autoFocus
                   />
                 </div>
-                <button
-                  onClick={handleStkSubmit}
-                  style={{
-                    width: "100%",
-                    padding: "12px 24px",
-                    background:
-                      "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = "translateY(-1px)";
-                    e.target.style.boxShadow =
-                      "0 4px 12px rgba(5, 150, 105, 0.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = "translateY(0)";
-                    e.target.style.boxShadow = "none";
-                  }}
-                >
-                  Pay KSH 20
-                </button>
+                <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+                  <button
+                    onClick={() => setShowStkPrompt(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px 24px",
+                      background: "#f1f5f9",
+                      color: "#64748b",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = "#e2e8f0";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = "#f1f5f9";
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleStkSubmit}
+                    style={{
+                      flex: 1,
+                      padding: "12px 24px",
+                      background:
+                        "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = "translateY(-1px)";
+                      e.target.style.boxShadow =
+                        "0 4px 12px rgba(5, 150, 105, 0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = "translateY(0)";
+                      e.target.style.boxShadow = "none";
+                    }}
+                  >
+                    Pay KSH 20
+                  </button>
+                </div>
               </div>
             )}
 
@@ -2944,13 +2969,19 @@ const Flow = ({
   const exportAsImage = useCallback(
     async (premium = false) => {
       try {
-        // First, ensure nodes are in their original state (restore from any previous premium export)
-        const nodeElements = document.querySelectorAll(".family-node");
-        nodeElements.forEach((nodeEl) => {
-          if ((nodeEl as any)._originalContent) {
-            nodeEl.innerHTML = (nodeEl as any)._originalContent;
-          }
-        });
+        // Temporarily set exportMode on nodes for proper rendering
+        const exportMode = premium ? "premium" : "free";
+        const tempNodes = nodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            exportMode,
+          },
+        }));
+        setNodes(addCallbacksToNodes(tempNodes));
+
+        // Wait for React to re-render
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Hide UI elements temporarily
         const controlPanels = document.querySelectorAll(".control-panel");
@@ -2974,118 +3005,6 @@ const Flow = ({
           (attribution as HTMLElement).style.display = "none";
         }
 
-        // For premium export, temporarily modify node rendering
-        let nodeImages = {};
-        if (premium && currentFamilyId) {
-          try {
-            // Fetch all node images for this family
-            const headers: any = { "X-User-ID": userId };
-            if (token) {
-              headers.Authorization = `Bearer ${token}`;
-            }
-
-            // Get images for all nodes
-            const imagePromises = nodes.map(async (node) => {
-              try {
-                const response = await fetch(
-                  `${API_BASE_URL}/node-image/${currentFamilyId}/${node.id}`,
-                  {
-                    headers,
-                  }
-                );
-                if (response.ok) {
-                  const imageData = await response.json();
-                  return { nodeId: node.id, imageData };
-                }
-              } catch (error) {
-                console.warn(
-                  `Failed to fetch image for node ${node.id}:`,
-                  error
-                );
-              }
-              return null;
-            });
-
-            const imageResults = await Promise.all(imagePromises);
-            nodeImages = imageResults
-              .filter((result) => result !== null)
-              .reduce((acc, result) => {
-                acc[result.nodeId] = result.imageData;
-                return acc;
-              }, {});
-          } catch (error) {
-            console.warn("Failed to fetch node images:", error);
-          }
-
-          // Temporarily replace node content for premium export
-          const nodeElements = document.querySelectorAll(".family-node");
-          nodeElements.forEach((nodeEl) => {
-            const nodeId = (nodeEl as HTMLElement).getAttribute("data-id");
-            const node = nodes.find((n) => n.id === nodeId);
-            const imageData = nodeImages[nodeId];
-
-            if (node) {
-              // Store original content
-              const originalContent = nodeEl.innerHTML;
-
-              // Create premium content
-              const premiumContent = `
-                <div style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: center;
-                  width: 100%;
-                  height: 100%;
-                  padding: 8px;
-                  box-sizing: border-box;
-                ">
-                  <div style="
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 50%;
-                    ${
-                      imageData
-                        ? `background-image: url(${imageData.image_data});
-                       background-size: cover;
-                       background-position: center;`
-                        : `background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-                       display: flex;
-                       align-items: center;
-                       justify-content: center;
-                       font-size: 24px;
-                       color: #6b7280;`
-                    }
-                    border: 3px solid #fff;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                    margin-bottom: 8px;
-                  ">
-                    ${!imageData ? "❓" : ""}
-                  </div>
-                  <div style="
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: #1e293b;
-                    text-align: center;
-                    max-width: 120px;
-                    word-wrap: break-word;
-                    line-height: 1.2;
-                  ">
-                    ${node.data.name || node.data.label || "Unknown"}
-                  </div>
-                </div>
-              `;
-
-              nodeEl.innerHTML = premiumContent;
-              // Store original content for restoration
-              (nodeEl as any)._originalContent = originalContent;
-            }
-          });
-
-          // Wait for DOM updates to settle - longer wait for premium export
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-
         // CRITICAL: Temporarily disable animations and fix edge styles for export
         const tempEdges = edges.map((edge) => ({
           ...edge,
@@ -3104,15 +3023,7 @@ const Flow = ({
         // Wait for the edge update to render
         await new Promise((resolve) => setTimeout(resolve, 300));
 
-        // For premium export, recalculate bounds after DOM changes
-        let nodesBounds;
-        if (premium) {
-          // Wait a bit more for DOM to settle, then recalculate bounds
-          await new Promise((resolve) => setTimeout(resolve, 200));
-          nodesBounds = getNodesBounds(nodes);
-        } else {
-          nodesBounds = getNodesBounds(nodes);
-        }
+        const nodesBounds = getNodesBounds(tempNodes);
         const padding = 200; //extra padding for large trees
         // calculate dynamic image dimensions based on content
         const minWidth = 800;
@@ -3189,15 +3100,8 @@ const Flow = ({
         // Restore original edges (with animations)
         setEdges(edges);
 
-        // Restore node content for premium export
-        if (premium) {
-          const nodeElements = document.querySelectorAll(".family-node");
-          nodeElements.forEach((nodeEl) => {
-            if ((nodeEl as any)._originalContent) {
-              nodeEl.innerHTML = (nodeEl as any)._originalContent;
-            }
-          });
-        }
+        // Restore nodes to normal state
+        setNodes(addCallbacksToNodes(nodes));
 
         // Restore UI elements
         controlPanels.forEach((panel, index) => {
@@ -3220,12 +3124,16 @@ const Flow = ({
         const filename = `${currentFamily || "family-tree"}-${timestamp}.png`;
         downloadImage(dataUrl, filename);
 
+        // Show success message
+        alert(`Family tree exported successfully as "${filename}"!`);
+
         console.log("Family tree exported successfully!");
       } catch (error) {
         console.error("Export failed:", error);
 
         // Emergency restore - restore original edges and UI
         setEdges(edges);
+        setNodes(addCallbacksToNodes(nodes));
         const controlPanels = document.querySelectorAll(".control-panel");
         const adminDashboard = document.querySelector(".admin-dashboard-modal");
         const attribution = document.querySelector(".react-flow__attribution");
@@ -3243,7 +3151,7 @@ const Flow = ({
         alert("Export failed. Please try again.");
       }
     },
-    [currentFamily, nodes, edges, setEdges]
+    [currentFamily, nodes, edges, setEdges, setNodes, addCallbacksToNodes]
   );
 
   const toggleTheme = () => {
@@ -3340,7 +3248,7 @@ const Flow = ({
         <ExportModal
           isOpen={showExportModal}
           onClose={() => setShowExportModal(false)}
-          onExportFree={exportAsImage}
+          onExportFree={() => exportAsImage(false)}
           onExportPremium={() => {
             exportAsImage(true);
           }}

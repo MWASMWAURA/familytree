@@ -17,6 +17,7 @@ interface NodeData {
   familyId?: string;
   userId?: string;
   token?: string;
+  exportMode?: "free" | "premium" | null;
 }
 
 interface FamilyTreeNodeProps {
@@ -332,7 +333,14 @@ const FamilyTreeNode: React.FC<FamilyTreeNodeProps> = ({ data, id }) => {
           </div>
         ) : (
           <>
-            {nodeImage && data.isPremium ? (
+            {data.exportMode === "free" ? (
+              <>
+                <div className="node-name">{data.name || data.label}</div>
+                {data.details && (
+                  <div className="node-details">{data.details}</div>
+                )}
+              </>
+            ) : data.exportMode === "premium" && nodeImage ? (
               <div className="node-with-image">
                 <div
                   className="node-image"
@@ -344,9 +352,23 @@ const FamilyTreeNode: React.FC<FamilyTreeNodeProps> = ({ data, id }) => {
               </div>
             ) : (
               <>
-                <div className="node-name">{data.name || data.label}</div>
-                {data.details && (
-                  <div className="node-details">{data.details}</div>
+                {nodeImage && data.isPremium ? (
+                  <div className="node-with-image">
+                    <div
+                      className="node-image"
+                      style={{
+                        backgroundImage: `url(${nodeImage})`,
+                      }}
+                    ></div>
+                    <div className="node-name">{data.name || data.label}</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="node-name">{data.name || data.label}</div>
+                    {data.details && (
+                      <div className="node-details">{data.details}</div>
+                    )}
+                  </>
                 )}
               </>
             )}
