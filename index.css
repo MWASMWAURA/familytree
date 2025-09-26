@@ -699,12 +699,12 @@ body {
   bottom: -400px;
   left: 20px;
   right: 20px;
-  height: 350px;
+  height: 300px;
   border-radius: 12px 12px 0 0;
 }
 
 .bottom-drawer.open {
-  bottom: 80px; /* Above the toggle buttons */
+  bottom: 40px; /* Above the toggle buttons */
 }
 
 /* Admin Drawer */
