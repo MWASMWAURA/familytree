@@ -3101,7 +3101,7 @@ const Flow = ({
         if (isSmallFamily) {
           // Small family - use dimensions based on content with extra padding for bottom node
           imageWidth = Math.max(contentWidth, 400); // minimum 400px
-          imageHeight = Math.max(contentHeight + 50, 300); // minimum 300px, extra 50px for bottom node
+          imageHeight = Math.max(contentHeight + 100, 300); // minimum 300px, extra 50px for bottom node
         } else {
           // Large family - use standard dimension calculation
           imageWidth = Math.max(
