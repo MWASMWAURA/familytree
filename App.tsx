@@ -2130,6 +2130,7 @@ const Flow = ({
                 setEdges(layoutedEdges);
                 setCurrentFamily(existingFamily.name);
                 setCurrentFamilyId(existingFamily.id);
+                setAccessCode(existingFamily.access_code);
                 setIsAdmin(true);
                 setShareableLink(
                   `${window.location.href}?family=${encodeURIComponent(
@@ -2761,6 +2762,7 @@ const Flow = ({
         setEdges(layoutedEdges);
         setCurrentFamily(freshFamilyData.name);
         setCurrentFamilyId(freshFamilyData.id);
+        setAccessCode(freshFamilyData.access_code);
         setIsAdmin(true); // If loaded from saved, user is admin
         setShareableLink(
           `${window.location.href}?family=${encodeURIComponent(
